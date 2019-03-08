@@ -44,3 +44,17 @@ Or you can set up it so that your local master branch tracks github master branc
 Now you can easily pull the latest repository:
 
 ```git pull```
+
+Use **dev** branch for development purposes
+
+```git checkout dev```
+
+It is wiser to merge two branches inside **dev** first to see if there are conflicts and avoid overriding 
+
+(on branch dev) ``` git merge master```
+
+and if everything seems ok, continue with:
+```bash
+git checkout master
+git merge dev
+```
