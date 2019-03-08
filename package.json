@@ -25,5 +25,8 @@
   "bugs": {
     "url": "https://github.com/azadyasar/TrafficFlowAPI/issues"
   },
-  "homepage": "https://github.com/azadyasar/TrafficFlowAPI#readme"
+  "homepage": "https://github.com/azadyasar/TrafficFlowAPI#readme",
+  "dependencies": {
+    "winston": "^3.2.1"
+  }
 }
