@@ -1,0 +1,29 @@
+{
+  "name": "trafficflowapi",
+  "version": "1.0.0",
+  "description": "Provides a bunch of useful information related to traffic flow, weather, and road types.",
+  "main": "app.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azadyasar/TrafficFlowAPI.git"
+  },
+  "keywords": [
+    "traffic",
+    "flow",
+    "api",
+    "weather",
+    "road"
+  ],
+  "author": "Azad-Emre",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/azadyasar/TrafficFlowAPI/issues"
+  },
+  "homepage": "https://github.com/azadyasar/TrafficFlowAPI#readme"
+}
