@@ -60,6 +60,14 @@ git checkout master
 git merge dev
 ```
 
+Issue the following set of commands to check if there are changes on the remote server (whether another contributor has pushed something):
+
+```bash
+git remote update
+git status -uno
+git show-branch *master
+```
+
 ### How to Use Winston Logger
 Winston logger is constructed inside ***utils/logger*** module. The logger prints log messages in the following format  ``` timestamp [label level] message ```.
 
