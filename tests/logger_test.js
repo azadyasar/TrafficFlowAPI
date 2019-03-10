@@ -1,24 +1,22 @@
 const logger = require('../utils/logger');
+const { sep:path_separator } = require('path');
 
-const test_logging = () => {
-    var funName = arguments.callee.name;
-    console.log(funName);
-    console.log(test_logging.name);
-    console.log(module.name);
-    console.log(new Error().stack);
-    console.error('aaa')
-    console.trace("here I am");
+// Get the name of current module (aka filename)
+var filenameTokens = __filename.split(path_separator);
+const currentModuleName = filenameTokens[filenameTokens.length - 1];
+
+const testBasicLogging = () => {
     logger.log({
         level: 'info',
-        message: '[TEST]Logging info level from log method'
+        message: currentModuleName + ' Logging info level from log method'
     });
 
-    logger.debug("[TEST] Logging debug");
-    logger.info("[TEST] Logging info");
-    logger.warn("[TEST] Logging info");
-    logger.error("[TEST] Loggin error");
+    logger.debug(`[${currentModuleName}] Logging debug`);
+    logger.info(`[${currentModuleName}] Logging info`);
+    logger.warn(`[${currentModuleName}] Logging info`);
+    logger.error(`[${currentModuleName}] Loggin error`);
 };
 
 module.exports = {
-    test_logging
+    testBasicLogging: testBasicLogging
 };

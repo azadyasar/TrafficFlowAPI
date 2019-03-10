@@ -1,0 +1,12 @@
+{
+    "name": "Traffic Flow API Defaul Config File",
+    "Logger": {
+        "logLabel": "AppDev",
+        "logLevel": "debug",
+        "errorLogPath"    : "logs/error.log",
+        "warnLogPath"     : "logs/warn.log",
+        "infoLogPath"     : "logs/info.log",
+        "debugLogPath"    : "logs/debug.log",
+        "exceptionLogPath": "logs/exception.log"
+    }
+}

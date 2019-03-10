@@ -1,0 +1,6 @@
+{
+    "testMail" : {
+        "hostmail" : "appDevHost",
+        "password": "NODE_APP_PW"
+    }
+}

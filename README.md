@@ -91,3 +91,13 @@ logger.debug('log debug');
 logger.warn('log warn');
 logger.error('log error');
 ```
+
+### How to Use Config
+
+It is more convenient to make use of **config** package for several application variable as they might change depending on the machine, requirements, etc. Use the following config files for related variables
+- **default.json:** &nbsp; All default variables
+- **development.json:** &nbsp; All ***development*** related variables
+- **production.json:** &nbsp;  All ***production*** related variables
+- **custom-environment-variables.json:** &nbsp; All ***environment*** variables. Credentials and other crucial variables should be defined here as environment variables.
+
+Note that custom config files will override ***default.json*** if any variable is defined in both places.
