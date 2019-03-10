@@ -1,4 +1,4 @@
-const { createLogger, format, transports } = require('winston')
+const { createLogger, loggers, format, transports } = require('winston')
 const { combine, timestamp, label, printf } = format;
 
 /**
@@ -9,7 +9,6 @@ const { combine, timestamp, label, printf } = format;
 const customFormat = printf( ({ level, message, label, timestamp }) => {
     return `${timestamp} [${label} ${level.toUpperCase()}]: ${message}`;
 });
-
 
 const logger = createLogger({
     level: 'debug',
@@ -28,5 +27,7 @@ const logger = createLogger({
         new transports.File({ filename: 'logs/exceptions.log', colorize: true })
     ]
 });
+
+loggers.add('general-logger', logger);
 
 module.exports = logger;

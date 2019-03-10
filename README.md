@@ -33,6 +33,7 @@ Provides a traffic flow information for the routes.
 
 ## Miscallenous 
 
+### Git Related
 To pull the latest repository from a branch, issue:
 
 ```git pull origin master```
@@ -51,10 +52,34 @@ Use **dev** branch for development purposes
 
 It is wiser to merge two branches inside **dev** first to see if there are conflicts and avoid overriding 
 
-(on branch dev) ``` git merge master```
+***(on branch dev)***  ``` git merge master```
 
 and if everything seems ok, continue with:
 ```bash
 git checkout master
 git merge dev
+```
+
+### How to Use Winston Logger
+Winston logger is constructed inside ***utils/logger*** module. The logger prints log messages in the following format  ``` timestamp [label level] message ```.
+
+**require** ***./utils/logger*** to have access to logging functions. Custom logger makes use of the following 4 logging levels (the most important to the least):
+- error
+- warn
+- info
+- debug
+
+Logged messages will be saved into the ***logs*** folder. Name of the log files are self-explanatory. You should note that a log file will write the incoming log message if the incoming log message has level that is greater than or equal to the level of the log file. To log relevant information, use the following schema in your **js** file.
+
+```javascript
+const logger = require('./utils/logger');
+// ...
+logger.log({
+    level: 'info',
+    message: 'Log info'
+});
+logger.info('log info');
+logger.debug('log debug');
+logger.warn('log warn');
+logger.error('log error');
 ```
