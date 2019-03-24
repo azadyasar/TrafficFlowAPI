@@ -3,6 +3,7 @@
 Provides a traffic flow information for the routes.
 
 ## Dependencies
+* **Babel:** To transpile our ES6 JS code into ES5
 * **Express:** Create a REST API
 * **Joi:** Validate incoming input
 * **Axios:** Make HTTP/S requests
@@ -12,20 +13,22 @@ Provides a traffic flow information for the routes.
 
 
 ## Project Structure
+* **bin** Application starting points. ***dev*** for development, ***production*** for production.
+* **dist** Not tracked. Folder for **babel** to transpile our source code into
 * **config** App configuration filesc
-* **routes** 
-  - **controllers** Request managers
-  - **middlewares** Request middlewares
-  - **routes.js**  Define routes and middlewares here
-* **services** External services implementation 
-* **db** Data access stuff
-* **core** Business logic implementation
-* **utils** Util libs (formats, validation, etc)
-* **tests** Testing
 * **scripts** Standalone scripts for dev uses
+* **src** Source Code
+    - **api** Applciation Programming Interface
+        - **controllers** Controllers for corresponding routes/endpoints
+        - **middleware** Middleware functions for routes e.g., authorization, logging
+        - **routes** Routes/endpoints. Routes will be matched with controllers
+    - **core** Business logic implementation
+    - **dao** Data Access Objects
+    - **services** Util libs (formats, validation, etc.)
+* **tests** Testing
+* **.env** Environment variables e.g., secret keys, passwords, credentials
 * **package.json**
 * **README.md**
-* **app.js** App starting point
 
 
 
