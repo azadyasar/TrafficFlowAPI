@@ -101,3 +101,107 @@ It is more convenient to make use of **config** package for several application 
 - **custom-environment-variables.json:** &nbsp; All ***environment*** variables. Credentials and other crucial variables should be defined here as environment variables.
 
 Note that custom config files will override ***default.json*** if any variable is defined in both places.
+
+### How to Use Jest
+
+Create your tests under the ***tests*** folder. Name convention is ```<test-name>.test.js```. To run a specific test, issue the following command:
+```bash 
+npm test -t <test-name>
+```  
+Here are some common test helpers. For more examples and a hands-on usage set, check out ```tests/testing_reference.test.js```.
+
+* **Using Matchers**
+
+    Jest uses "matchers" to let you test values in different ways. This document will introduce some commonly used matchers.
+
+    - **Common Matchers**
+        ```javascript
+        test('two plus two is four', () => {
+            expect(2 + 2).toBe(4);
+        });
+        ```
+        In this code, expect(2 + 2) returns an "expectation" object. You typically won't do much with these expectation objects except call matchers on them. In this code, .toBe(4) is the matcher. When Jest runs, it tracks all the failing matchers so that it can print out nice error messages for you.
+        ```javascript
+        test('object assignment', () => {
+            const data = {one: 1};
+            data['two'] = 2;
+            expect(data).toEqual({one: 1, two: 2});
+        });
+        ```
+    - **Truthiness**
+
+        In tests you sometimes need to distinguish between undefined, null, and false, but you sometimes do not want to treat these differently. Jest contains helpers that let you be explicit about what you want.
+        - ***toBeNull*** matches only null
+        - ***toBeUndefined*** matches only undefined
+        - ***toBeDefined*** is the opposite of toBeUndefined
+        - ***toBeTruthy*** matches anything that an if statement treats as true
+        - ***toBeFalsy*** matches anything that an if statement treats as false
+        
+        ```javascript
+        test('null', () => {
+            const n = null;
+            expect(n).toBeNull();
+            expect(n).toBeDefined();
+            expect(n).not.toBeUndefined();
+            expect(n).not.toBeTruthy();
+            expect(n).toBeFalsy();
+        });
+
+        test('zero', () => {
+            const z = 0;
+            expect(z).not.toBeNull();
+            expect(z).toBeDefined();
+            expect(z).not.toBeUndefined();
+            expect(z).not.toBeTruthy();
+            expect(z).toBeFalsy();
+        });
+        ```
+    - Numbers 
+        ```javascript
+            test('two plus two', () => {
+                const value = 2 + 2;
+                expect(value).toBeGreaterThan(3);
+                expect(value).toBeGreaterThanOrEqual(3.5);
+                expect(value).toBeLessThan(5);
+                expect(value).toBeLessThanOrEqual(4.5);
+
+                // toBe and toEqual are equivalent for numbers
+                expect(value).toBe(4);
+                expect(value).toEqual(4);
+            });
+        ```
+        For floating point numbers
+        ```javascript
+        test('adding floating point numbers', () => {
+            const value = 0.1 + 0.2;
+            //expect(value).toBe(0.3);This won't work because of rounding error
+            expect(value).toBeCloseTo(0.3); // This works.
+        });
+        ```
+
+    - Strings
+        ```javascript
+        test('there is no I in team', () => {
+            expect('team').not.toMatch(/I/);
+            });
+
+        test('but there is a "stop" in Christoph', () => {
+            expect('Christoph').toMatch(/stop/);
+        });
+        ```
+
+    - Arrays 
+        ```javascript
+        const shoppingList = [
+            'diapers',
+            'kleenex',
+            'trash bags',
+            'paper towels',
+            'beer',
+        ];
+
+        test('the shopping list has beer on it', () => {
+            expect(shoppingList).toContain('beer');
+        });
+        ```
+
