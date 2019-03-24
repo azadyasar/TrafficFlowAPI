@@ -2,13 +2,40 @@ const config = require('config');
 const chalk  = require('chalk');
 
 
+describe("Config Package", async () => {
+
+    test("Logger configs in default.json are set", async () => {
+        let logLevel;
+        try {
+            logLevel = config.get("Logger.logLevel");
+            expect(logLevel).not.toBeNull();
+        } catch (error) {
+            expect(error).toBeNull();
+        }
+
+    });
+
+    test("JWT_SECRET_KEY is set", async () => {
+        try {
+            const jwt_secret_key = config.get("jwt_secret_key");
+            expect(jwt_secret_key).not.toBeNull();
+            
+        } catch (error) {
+            expect(error).toBeNull();
+        }
+
+    });
+
+
+});
+/* 
 const testBasicConfig = () => {
     // default.json
     let logLevel;
     try {
         logLevel = config.get("Logger.logLevel");
     } catch (error) {
-        console.error('Cannot find logLevel inside defaul.json');
+        console.error('Cannot find logLevel inside default.json');
     }
     console.log(chalk.yellow(`[CONFIG-TEST]: `) + "default.json => " +
         `logLevel: ${logLevel}`);
@@ -42,3 +69,4 @@ module.exports = {
 };
 
 
+ */
