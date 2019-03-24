@@ -2,16 +2,32 @@ const config = require('config');
 const chalk  = require('chalk');
 
 
-describe("Config Package", async () => {
+describe("Config Package", () => {
+
+    test("Application Name is set properly", async () => {
+        const appName = config.get("name");
+        expect(appName).not.toBeNull();
+    });
 
     test("Logger configs in default.json are set", async () => {
         let logLevel;
         try {
             logLevel = config.get("Logger.logLevel");
             expect(logLevel).not.toBeNull();
+            expect(logLevel).toBeDefined();
         } catch (error) {
-            expect(error).toBeNull();
+            expect(error).toBeUndefined();
         }
+
+        let infoLogPath;
+        try {
+            infoLogPath = config.get("Logger.infoLogPath");
+            expect(infoLogPath).not.toBeNull();
+            expect(infoLogPath).toBeDefined();
+        } catch (error) {
+            expect(error).toBeUndefined();
+        }
+
 
     });
 
@@ -25,8 +41,6 @@ describe("Config Package", async () => {
         }
 
     });
-
-
 });
 /* 
 const testBasicConfig = () => {
