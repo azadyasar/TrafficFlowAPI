@@ -8,5 +8,9 @@
         "infoLogPath"     : "logs/info.log",
         "debugLogPath"    : "logs/debug.log",
         "exceptionLogPath": "logs/exception.log"
+    },
+    "TomTom": {
+        "baseURL": "api.tomtom.com",
+        "versionNumber": 4
     }
 }
