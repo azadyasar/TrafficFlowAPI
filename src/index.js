@@ -1,16 +1,15 @@
 const config = require('config');
 require('dotenv').config();
 
-console.log(`Name: ${config.get('name')}`);
 console.log(`Secret key from dotenv: ${process.env.JWT_SECRET_KEY}`);
 console.log(config.get('jwt_secret_key'));
 
 console.log(process.env.NODE_ENV);
 
-var express = require('express');
-var app = express();
+const port = process.env.PORT || 5432;
 
-var server = app.listen(3000, function(){
-    console.log('Listening on port ' + server.address().port);
-  });
-  
+
+import app from "./server";
+app.listen(port, () => {
+    console.log(`Running ${config.get('name')} on port ${port}`);
+});
