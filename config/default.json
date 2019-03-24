@@ -1,5 +1,5 @@
 {
-    "name": "Traffic Flow API Defaul Config File",
+    "name": "Traffic Flow API Default Config File",
     "Logger": {
         "logLabel": "AppDev",
         "logLevel": "debug",
