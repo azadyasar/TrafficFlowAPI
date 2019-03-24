@@ -1,17 +1,14 @@
 const config = require('config');
-const logger = require('./utils/logger');
-const logger_test = require('./tests/logger_test');
-const config_test = require('./tests/config_test');
 require('dotenv').config();
 
 console.log(`Name: ${config.get('name')}`);
 console.log(`Secret key from dotenv: ${process.env.JWT_SECRET_KEY}`);
 console.log(config.get('jwt_secret_key'));
 
-var express= require('express');
+var express = require('express');
 var app = express();
 
-var routes = require('./routes/routes')
+var routes = require('./src/api/routes')
 app.use('/', routes)
 
 var server = app.listen(3000, function(){
