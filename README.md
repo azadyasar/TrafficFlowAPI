@@ -36,6 +36,27 @@ Provides a traffic flow information for the routes.
 
 ## Miscallenous 
 
+### How to Run
+Issue
+
+```npm start```
+
+for development stage.
+
+Issue 
+
+```npm test``` or ```npm test -t <specific-test>```
+
+for test purposes.
+
+Issue 
+
+```npm run production```
+
+for production environment.
+
+
+
 ### Git Related
 To pull the latest repository from a branch, issue:
 
