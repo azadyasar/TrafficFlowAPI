@@ -7,10 +7,10 @@
     "test": "tests"
   },
   "scripts": {
-    "start": "NODE_ENV=development nodemon bin/dev",
+    "start": "env NODE_ENV=development nodemon bin/dev",
     "clean": "rm -rf dist",
     "build": "npm run clean && mkdir dist && babel src -s -d dist",
-    "production": "npm run build && NODE_ENV=production node bin/production",
+    "production": "npm run build && env NODE_ENV=production node bin/production",
     "test": "jest"
   },
   "repository": {
@@ -31,6 +31,7 @@
   },
   "homepage": "https://github.com/azadyasar/TrafficFlowAPI#readme",
   "dependencies": {
+    "axios": "^0.18.0",
     "body-parser": "^1.18.3",
     "chalk": "^2.4.2",
     "config": "^3.0.1",
