@@ -3,5 +3,6 @@
         "hostmail" : "appDevHost",
         "password": "NODE_APP_PW"
     },
-    "jwt_secret_key": "JWT_SECRET_KEY"
+    "JWT_SECRET_KEY": "JWT_SECRET_KEY",
+    "TOMTOM_API_KEY": "TOMTOM_API_KEY"
 }

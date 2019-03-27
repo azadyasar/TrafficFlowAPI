@@ -7,10 +7,10 @@
     "test": "tests"
   },
   "scripts": {
-    "start": "env NODE_ENV=development nodemon bin/dev",
+    "start": "cross-env NODE_ENV=development nodemon --exec babel-node bin/dev",
     "clean": "rm -rf dist",
-    "build": "npm run clean && mkdir dist && babel src -s -d dist",
-    "production": "npm run build && env NODE_ENV=production node bin/production",
+    "build": "npm run clean && mkdir dist && babel src -s --out-dir dist",
+    "production": "npm run build && cross-env NODE_ENV=production node bin/production",
     "test": "jest"
   },
   "repository": {
@@ -40,11 +40,14 @@
     "express": "^4.16.4",
     "jest": "^24.5.0",
     "morgan": "^1.9.1",
+    "prettier": "^1.16.4",
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
-    "babel-register": "^6.26.0"
+    "@babel/cli": "7.x.x",
+    "@babel/core": "^7.4.0",
+    "@babel/node": "^7.2.2",
+    "@babel/preset-env": "7.x.x",
+    "cross-env": "^5.2.0"
   }
 }
