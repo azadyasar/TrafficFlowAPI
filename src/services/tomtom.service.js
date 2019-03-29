@@ -58,6 +58,14 @@ export default class TomTomTrafficFlow {
             });
         });
     }
+
+    /**
+     * 
+     * @param {Coordinate} coord - Must be a pair of numbers containing `lat` and `long`.
+     * @returns 
+     */
+    
+    
 } 
 /* 
 async function test() {

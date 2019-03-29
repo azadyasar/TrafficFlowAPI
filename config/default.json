@@ -37,6 +37,37 @@
                 "style": "absolute"
             }
         },
+        "Map": {
+            "baseURL"            : "api.tomtom.com",
+            "APIEndpointTemplate": "https://api.tomtom.com/map/versionNumber/tile/layer/style/zoom/XTILE/YILE.format",
+            "versionNumber"      : "1",
+            "layer"              : {
+                "basic" : "basic",
+                "hybrid": "hybrid",
+                "labels": "labels"
+            },
+            "style": {
+                "main" : "main",
+                "night": "night"
+            },
+            "format": {
+                "png": "png",
+                "jpg": "jpg"
+            },
+            "DefaultParams": {
+                "format": "png",
+                "style": "main",
+                "layer": "basic",
+                "tileSize": 256,
+                "view": "unified",
+                "language": "en"
+            },
+            "OptionalParams": {
+                "tileSize": "tileSize",
+                "view": "view",
+                "language": "language"
+            }
+        },
         
         
         "FRC0": "Motorway, freeway or other major road",
