@@ -1,15 +1,31 @@
-const config = require('config');
 require('dotenv').config();
+import config from "config";
+import logger from "./utils/logger";
 
-console.log(`Secret key from dotenv: ${process.env.JWT_SECRET_KEY}`);
-console.log(config.get('jwt_secret_key'));
-
-console.log(process.env.NODE_ENV);
-
-const port = process.env.PORT || 5432;
+const port = process.env.PORT || 5555;
 
 
 import app from "./server";
-app.listen(port, () => {
-    console.log(`Running ${config.get('name')} on port ${port}`);
+const server = app.listen(port, () => {
+    logger.info(`Running ${config.get('name')} on port ${port}`);
 });
+
+
+/**
+ * Shut down server on uncaughtExceptions and SIGTERM signal in order not to leave the port dangle
+ */
+process
+  .on('uncaughtException', (exception) => {
+      if (server) {
+          server.close();
+          logger.error(`UncaughtException received. Shutting down server...\nException: ${exception}`);
+      }
+  })
+  .on('SIGTERM', () => {
+      if (server) {
+          server.close();
+          logger.info("SIGTERM received. Shutting down server...");
+      }
+  });
+
+

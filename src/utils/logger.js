@@ -75,23 +75,64 @@ if (config.has("Logger.exceptionLogPath")) {
 
 const logger = createLogger({
     level: logLevel,
-    format: combine(
-        label({ label: logLabel }),
-        timestamp(),
-        customFormat
-    ),
     transports: [
-        new transports.File({ filename: errorLogPath, level: 'error', colorize: true }),
-        new transports.File({ filename: warnLogPath, level: 'warn', colorize: true }),
-        new transports.File({ filename: infoLogPath, level: 'info', colorize: true }),
-        new transports.File({ filename: debugLogPath, level: 'debug', colorize: true })
+        new transports.File({ 
+            filename: errorLogPath,
+            level   : 'error',
+            colorize: true,
+            format  : combine(
+                label({ label: logLabel }),
+                timestamp(),
+                customFormat
+        ), }),
+        new transports.File({ 
+            filename: warnLogPath,
+            level   : 'warn',
+            colorize: true,
+            format  : combine(
+                label({ label: logLabel }),
+                timestamp(),
+                customFormat
+        ), }),
+        new transports.File({ 
+            filename: infoLogPath,
+            level   : 'info',
+            colorize: true,
+            format  : combine(
+                label({ label: logLabel }),
+                timestamp(),
+                customFormat
+        ),}),
+        new transports.File({ 
+            filename: debugLogPath,
+            level   : 'debug',
+            colorize: true,
+            format  : combine(
+                label({ label: logLabel }),
+                timestamp(),
+                customFormat
+        ), }),
+        new transports.Console({
+            format: combine(
+                format.colorize({ colors: { info: "green", error: "red", warn: "yellow", debug: "cyan"} }),
+                format.simple(),
+        )}),
     ],
     exceptionHandlers: [
         new transports.File({ filename: exceptionLogPath, colorize: true }),
-        new transports.Console()
-    ]
+        new transports.Console(),
+    ],
+    exitOnError: false,
 });
+
+logger.stream = {
+    write: function (message, encoding) {
+        logger.info(message);
+    }
+};
 
 loggers.add('general-logger', logger);
 
-module.exports = logger;
+export default logger;
+
+// module.exports = logger;

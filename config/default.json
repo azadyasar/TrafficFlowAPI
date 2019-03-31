@@ -1,16 +1,87 @@
 {
-    "name": "Traffic Flow API Default Config File",
+    "name"  : "Traffic Flow API Default Config File",
     "Logger": {
-        "logLabel": "AppDev",
-        "logLevel": "debug",
+        "logLabel"        : "AppDev",
+        "logLevel"        : "debug",
         "errorLogPath"    : "logs/error.log",
         "warnLogPath"     : "logs/warn.log",
         "infoLogPath"     : "logs/info.log",
         "debugLogPath"    : "logs/debug.log",
         "exceptionLogPath": "logs/exception.log"
     },
+
     "TomTom": {
-        "baseURL": "api.tomtom.com",
-        "versionNumber": 4
-    }
+        "Traffic": {
+            "baseURL"            : "api.tomtom.com",
+            "APIEndpointTemplate": "https://api.tomtom.com/traffic/services/versionNumber/flowSegmentData/style/zoom/format",
+            "versionNumber"      : 4,
+            "style"              : {
+                "absolute"      : "absolute",
+                "relative"      : "relative",
+                "relative-delay": "relative-delay"
+            },
+            "format": {
+                "xml"  : "xml",
+                "json" : "json",
+                "jsonp": "jsonp"
+            },
+            "OptionalParams": {
+                "Unit": {
+                    "kmph": "kmph",
+                    "mph" : "mph"
+                }
+            },
+            "DefaultParams": {
+                "zoom"  : 13,
+                "format": "json",
+                "style" : "absolute"
+            }
+        },
+        "Map": {
+            "baseURL"            : "api.tomtom.com",
+            "APIEndpointTemplate": "https://api.tomtom.com/map/versionNumber/tile/layer/style/zoom/XTILE/YTILE.format",
+            "versionNumber"      : "1",
+            "layer"              : {
+                "basic" : "basic",
+                "hybrid": "hybrid",
+                "labels": "labels"
+            },
+            "style": {
+                "main" : "main",
+                "night": "night"
+            },
+            "format": {
+                "png": "png",
+                "jpg": "jpg"
+            },
+            "DefaultParams": {
+                "format"  : "png",
+                "style"   : "main",
+                "layer"   : "basic",
+                "tileSize": 256,
+                "view"    : "unified",
+                "language": "en",
+                "zoom"    : 12
+            },
+            "OptionalParams": [
+                "tileSize",
+                "view",
+                "language"
+            ]
+        },
+        
+        
+        "FRC0": "Motorway, freeway or other major road",
+        "FRC1": "Major road, less important than a motorway",
+        "FRC2": "Other major road",
+        "FRC3": "Secondary road",
+        "FRC4": "Local connecting road",
+        "FRC5": "Local road of high importance",
+        "FRC6": "Local road"
+    },
+
+    "Mlg": {
+            
+        }
+    
 }
