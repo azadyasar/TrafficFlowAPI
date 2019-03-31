@@ -1,5 +1,5 @@
 {
-    "name": "Traffic Flow API Default Config File",
+    "name"  : "Traffic Flow API Default Config File",
     "Logger": {
         "logLabel"        : "AppDev",
         "logLevel"        : "debug",
@@ -32,14 +32,14 @@
                 }
             },
             "DefaultParams": {
-                "zoom" : 13,
+                "zoom"  : 13,
                 "format": "json",
-                "style": "absolute"
+                "style" : "absolute"
             }
         },
         "Map": {
             "baseURL"            : "api.tomtom.com",
-            "APIEndpointTemplate": "https://api.tomtom.com/map/versionNumber/tile/layer/style/zoom/XTILE/YILE.format",
+            "APIEndpointTemplate": "https://api.tomtom.com/map/versionNumber/tile/layer/style/zoom/XTILE/YTILE.format",
             "versionNumber"      : "1",
             "layer"              : {
                 "basic" : "basic",
@@ -55,18 +55,19 @@
                 "jpg": "jpg"
             },
             "DefaultParams": {
-                "format": "png",
-                "style": "main",
-                "layer": "basic",
+                "format"  : "png",
+                "style"   : "main",
+                "layer"   : "basic",
                 "tileSize": 256,
-                "view": "unified",
-                "language": "en"
+                "view"    : "unified",
+                "language": "en",
+                "zoom"    : 12
             },
-            "OptionalParams": {
-                "tileSize": "tileSize",
-                "view": "view",
-                "language": "language"
-            }
+            "OptionalParams": [
+                "tileSize",
+                "view",
+                "language"
+            ]
         },
         
         
