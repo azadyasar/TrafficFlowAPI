@@ -122,18 +122,6 @@ export default class TomTomAPIWrapper {
     
     
 } 
-/* 
-async function test() {
-    try {
-        const result = await TomTomTrafficFlow.getFlowInfoCoord(point);
-        logger.info(`Result: ${result}`);
-    } catch (error) {
-        console.error(error);
-    }
-
-} */
-
-
 
 class TomTomUtils {
     /**
