@@ -121,8 +121,15 @@ const logger = createLogger({
     exceptionHandlers: [
         new transports.File({ filename: exceptionLogPath, colorize: true }),
         new transports.Console(),
-    ]
+    ],
+    exitOnError: false,
 });
+
+logger.stream = {
+    write: function (message, encoding) {
+        logger.info(message);
+    }
+};
 
 loggers.add('general-logger', logger);
 

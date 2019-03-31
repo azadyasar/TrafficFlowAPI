@@ -12,20 +12,20 @@ const server = app.listen(port, () => {
 
 
 /**
- * Shut down server on uncaughtExceptions and SIGTERM signal not to leave the port dangle
+ * Shut down server on uncaughtExceptions and SIGTERM signal in order not to leave the port dangle
  */
 process
-    .on('uncaughtException', (exception) => {
-        if (server) {
-            server.close();
-            logger.error(`UncaughtException received. Shutting down server...\nException: ${exception}`);
-        }
-    })
-    .on('SIGTERM', () => {
-        if (server) {
-            server.close();
-            logger.info("SIGTERM received. Shutting down server...");
-        }
-    });
+  .on('uncaughtException', (exception) => {
+      if (server) {
+          server.close();
+          logger.error(`UncaughtException received. Shutting down server...\nException: ${exception}`);
+      }
+  })
+  .on('SIGTERM', () => {
+      if (server) {
+          server.close();
+          logger.info("SIGTERM received. Shutting down server...");
+      }
+  });
 
 

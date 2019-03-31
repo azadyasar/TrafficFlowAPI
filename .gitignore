@@ -3,3 +3,4 @@ logs*
 dist*
 .env
 *env*
+tests/playground.js

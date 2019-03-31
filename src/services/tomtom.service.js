@@ -1,5 +1,6 @@
 const axios  = require('axios');
 const config = require('config');
+import MapUtils from "../utils/map";
 
 import logger from "../utils/logger";
 // const logger = require("../utils/logger");
@@ -8,6 +9,14 @@ let tomtomTrafficAPIVersionNumber = config.get("TomTom.Traffic.versionNumber");
 let tomtomTrafficZoomLevel        = config.get("TomTom.Traffic.DefaultParams.zoom");
 let tomtomTrafficReturnFromat     = config.get("TomTom.Traffic.DefaultParams.format");
 let tomtomTrafficStyle            = config.get("TomTom.Traffic.DefaultParams.style");
+let tomtomMapAPIVersionNumber     = config.get("TomTom.Map.versionNumber");
+let tomtomMapFormat               = config.get("TomTom.Map.DefaultParams.format");
+let tomtomMapStyle                = config.get("TomTom.Map.DefaultParams.style");
+let tomtomMapLayer                = config.get("TomTom.Map.DefaultParams.layer");
+let tomtomMapTileSize             = config.get("TomTom.Map.DefaultParams.tileSize");
+let tomtomMapView                 = config.get("TomTom.Map.DefaultParams.view");
+let tomtomMapLanguage             = config.get("TomTom.Map.DefaultParams.language");
+let tomtomMapZoomLevel            = config.get("TomTom.Map.DefaultParams.zoom");
 let tomtomAppKey;
 
 if (config.has("TOMTOM_API_KEY"))
@@ -18,46 +27,100 @@ else
     logger.warn("TOMTOM_API_KEY environment variable is not set. Requests to TomTom API will fail.");
 
 
-let tomtomBaseURL = config.get("TomTom.Traffic.APIEndpointTemplate")
-                                .replace("versionNumber", tomtomTrafficAPIVersionNumber)
-                                .replace("style", tomtomTrafficStyle)
-                                .replace("zoom", tomtomTrafficZoomLevel)
-                                .replace("format", tomtomTrafficReturnFromat);
+let tomtomTrafficBaseURL = config.get("TomTom.Traffic.APIEndpointTemplate")
+                                    .replace("versionNumber", tomtomTrafficAPIVersionNumber)
+                                    .replace("layer", tomtomMapLayer)
+                                    .replace("style", tomtomTrafficStyle)
+                                    .replace("zoom", tomtomTrafficZoomLevel)
+                                    .replace("format", tomtomTrafficReturnFromat);
 
-logger.info("tomtomBaseURL is set up: " + tomtomBaseURL);
+let tomtomMapBaseURL = config.get("TomTom.Map.APIEndpointTemplate")
+                                .replace("versionNumber", tomtomMapAPIVersionNumber)
+                                .replace("format", tomtomMapFormat)
+                                .replace("layer", tomtomMapLayer)
+                                .replace("style", tomtomMapStyle);
 
-export default class TomTomTrafficFlow {
+
+logger.info("tomtomTrafficBaseURL is set up: " + tomtomTrafficBaseURL);
+logger.info("tomtomMapBaseURL is set up: " + tomtomMapBaseURL);
+
+export default class TomTomAPIWrapper {
     /**
      * 
-     * @param {Coordinate} coord - Must be a pair of numbers.
+     * @param {Coordinate} coord - Must be a pair of numbers. Coordinates are expected as parameters during a request.
      * @returns {Promise<TomTomFlowSegmentData>} Returns a promise of the flow segment data
      */
     static async getFlowInfoCoord(coord) {
         let tomtomFlowSegmentData = {};
-        logger.info("Executing GET Request " + tomtomBaseURL + " - " + JSON.stringify(coord));
+        logger.info("Executing GET Request from getFlowInfoCoord " + tomtomTrafficBaseURL + " - " + JSON.stringify(coord));
         return new Promise( (resolve, reject) => {
-            axios.get(tomtomBaseURL, {
+            axios.get(tomtomTrafficBaseURL, {
                 params: {
                     key: tomtomAppKey,
                     point: `${coord.lat},${coord.long}`,
                 }
             })
             .then( (response) => {
-                logger.info("GOT Response: " + response);
+                logger.info("GOT Response -getFlowInfoCoord-: " + response);
                 if (response.status !== 200) {
-                    logger.warn("Response status is " + response.status);
-                    reject(new Error("Response status is " + response.status));
+                    logger.warn("Response status is getFlowInfoCoord " + response.status);
+                    /**
+                     * Should we resolve with null, when we have a response wity non-200 response code?
+                     */
+                    reject(new Error("Response status is " + response.status + ` response: ${response}`));
                 }
                 tomtomFlowSegmentData = TomTomUtils.storeFlowSegmentData(response.data);
-                logger.info(`Response data: ${tomtomFlowSegmentData}`);
+                logger.info(`Response data -getFlowInfoCoord-: ${JSON.stringify(tomtomFlowSegmentData)}`);
                 resolve(tomtomFlowSegmentData);
             })
             .catch( (error) => {
-                logger.error(`Error occured during GET request: ${error}`);
+                console.log(error);
+                logger.error(`Error occured during GET request of getFlowInfoCoord: ${error}`);
                 reject(error);
             });
         });
     }
+
+    /**
+     * 
+     * @param {Coordinate} coord - Must be a pair of numbers containing `lat` and `long`. They will be converted to a zoom, xtile, yile triplet.
+     * @param {TomTomMapTileRequestOptions} options - Options to be used before and during making a request to TomTom Map Tile API
+     * @returns {Promise<axios.response.data>} A data stream containing the image of the tile at a given zoom. Should be used to pipe to another stream e.g., writeStream, or express response stream
+     */
+    static async getTileImage(coord, options = { zoom: tomtomMapZoomLevel }) {
+      /**
+       * `undefined` zoom might come from a client's request. It's not checked in the route handler.
+       */
+      if (options.zoom === undefined || options.zoom === null)
+        options.zoom = tomtomMapZoomLevel;
+      const tile = MapUtils.convertCoordToTile(coord, options.zoom);
+      const targetTileURL = tomtomMapBaseURL.replace("XTILE", tile.xtile)
+                                            .replace("YTILE", tile.ytile)
+                                            .replace("zoom", tile.zoom);
+      logger.info(`Executing GET Request from getTileImage to ${targetTileURL}` +
+                    ` with ${JSON.stringify(tile)}`);
+            
+      return new Promise( (resolve, reject) => {
+        axios.get(targetTileURL, {
+          responseType : 'stream',
+          params: {
+            key: tomtomAppKey,
+            language: tomtomMapLanguage,
+          },
+        })
+        .then( (response) => {
+          logger.info(`Got response -getTileImage-: ${response}`);
+          resolve(response.data);
+        })
+        .catch ( (error) => {
+          logger.error(`Error occured during GET request of getTileImage: ${error}`);
+          reject(error);
+        });
+
+      });
+    }
+    
+    
 } 
 /* 
 async function test() {
@@ -73,6 +136,11 @@ async function test() {
 
 
 class TomTomUtils {
+    /**
+     * 
+     * @param {axios.response.data} data - Data containing the traffic flow information of the given coordinate
+     * @returns {TomTomFlowSegmentData}
+     */
     static storeFlowSegmentData(data) {
         const destObject = {};
         if (data === null || data === undefined)
@@ -90,13 +158,6 @@ class TomTomUtils {
     }
 }
 
-// module.exports = TomTomTrafficFlow;
-
-
-/**
- * 
- */
-
 /**
  * Represents a GPS coordinate
  * @typedef Coordinate 
@@ -113,43 +174,22 @@ class TomTomUtils {
  * @property {number} freeFlowSpeed - Free flow speed of the road
  * @property {number} currentTravelTime - Current travel time of the road
  * @property {number} freeFlowTravelTime - Free flow travel time of the road
-* @property {number} confidence - Confidence of the speed and time information
-* @property {object[]} coordinates - Coordinate array, a line through the direction of the road, starting from the given coordinate 
-*/
+ * @property {number} confidence - Confidence of the speed and time information
+ * @property {object[]} coordinates - Coordinate array, a line through the direction of the road, starting from the given coordinate 
+ */
+
+/**
+ * 
+ * @typedef TomTomMapTileRequestOptions 
+ * @property {number} zoom - Will be used during conversion from coordinate to xtile/ytile
+ */
+
+/**
+ * Represents a Tile object
+ * @typedef Tile 
+ * @property {number} zoom - The zoom level of the tile to be rendered
+ * @property {number} xtile - The x coordinate of the tile on a zoom grid
+ * @property {number} ytile - The y coordinate of the tile on a zoom grid
+ */
 
 
- /* 
- axios.get(tomtomBaseURL, {
-     params: {
-         key: tomtomAppKey,
-         point,
-     }
- })
-   .then( (response) => {
-     for (key in response) {
-       const result = response[key];
-       console.log(`${key}: ${result}`);
-     }
-     
-     if (response.status !== 200) {
-         console.error("Response status is not OK - 200");
-         process.exit(1);
-     }
-     console.log(response.data);
- 
-     const tomtomFlowSegmentData = storeFlowSegmentData(response.data);
-     console.log(tomtomFlowSegmentData);
-     
-     console.log(response.data.flowSegmentData.coordinates);
-     const coordArray = Array(response.data.flowSegmentData.coordinates.coordinate)[0];
-     console.log(`Retrieved coordinate array info:\n\tLength: ${coordArray.length}`);
-     console.log(`\ttype: ${typeof coordArray}`);
-     console.log("\tisArray: " + Array.isArray(coordArray));
-     console.log("\tElements:");
-     coordArray.forEach((element, idx) => {
-       console.log(`\t\tIndex #${idx}: ${JSON.stringify(element)}`);
-     });
-   })
-   .catch( (error) => {
-     console.error(error);
-   }); */
