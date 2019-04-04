@@ -5,11 +5,11 @@ import morgan from "morgan";
 import tomtomRouter from "./api/routes/tomtom";
 import logger from "./utils/logger";
 
-
 const app = express();
 
 app.use(cors());
-process.env.NODE_ENV !== "production" && app.use(morgan("combined", { stream: logger.stream }));
+process.env.NODE_ENV !== "production" &&
+  app.use(morgan("combined", { stream: logger.stream }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -17,7 +17,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api/v1/tomtom", tomtomRouter);
 
 app.use("*", (req, res) => {
-    res.status(404).json({ error: "Not Found" });
+  res.status(404).json({ error: "Not Found" });
 });
 
 export default app;

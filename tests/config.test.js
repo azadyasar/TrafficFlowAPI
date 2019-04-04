@@ -1,46 +1,40 @@
-const config = require('config');
-const chalk  = require('chalk');
-
+const config = require("config");
+const chalk = require("chalk");
 
 describe("Config Package", () => {
+  test("Application Name is set properly", async () => {
+    const appName = config.get("name");
+    expect(appName).not.toBeNull();
+  });
 
-    test("Application Name is set properly", async () => {
-        const appName = config.get("name");
-        expect(appName).not.toBeNull();
-    });
+  test("Logger configs in default.json are set", async () => {
+    let logLevel;
+    try {
+      logLevel = config.get("Logger.logLevel");
+      expect(logLevel).not.toBeNull();
+      expect(logLevel).toBeDefined();
+    } catch (error) {
+      expect(error).toBeUndefined();
+    }
 
-    test("Logger configs in default.json are set", async () => {
-        let logLevel;
-        try {
-            logLevel = config.get("Logger.logLevel");
-            expect(logLevel).not.toBeNull();
-            expect(logLevel).toBeDefined();
-        } catch (error) {
-            expect(error).toBeUndefined();
-        }
+    let infoLogPath;
+    try {
+      infoLogPath = config.get("Logger.infoLogPath");
+      expect(infoLogPath).not.toBeNull();
+      expect(infoLogPath).toBeDefined();
+    } catch (error) {
+      expect(error).toBeUndefined();
+    }
+  });
 
-        let infoLogPath;
-        try {
-            infoLogPath = config.get("Logger.infoLogPath");
-            expect(infoLogPath).not.toBeNull();
-            expect(infoLogPath).toBeDefined();
-        } catch (error) {
-            expect(error).toBeUndefined();
-        }
-
-
-    });
-
-    test("JWT_SECRET_KEY is set", async () => {
-        try {
-            const jwt_secret_key = config.get("jwt_secret_key");
-            expect(jwt_secret_key).not.toBeNull();
-            
-        } catch (error) {
-            expect(error).toBeNull();
-        }
-
-    });
+  test("JWT_SECRET_KEY is set", async () => {
+    try {
+      const jwt_secret_key = config.get("jwt_secret_key");
+      expect(jwt_secret_key).not.toBeNull();
+    } catch (error) {
+      expect(error).toBeNull();
+    }
+  });
 });
 /* 
 const testBasicConfig = () => {
