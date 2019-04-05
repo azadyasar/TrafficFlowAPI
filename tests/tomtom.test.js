@@ -23,7 +23,7 @@ const zoom = 12;
 jest.setTimeout(60000);
 
 describe("TomTomAPI", () => {
-  test("Able to GET traffic flow of a given coordinate", async () => {
+  test("should GET traffic flow of a given coordinate", async () => {
     return TomTomAPIWrapper.getFlowInfoCoord(point)
       .then(trafficFlowResult => {
         expect(trafficFlowResult).not.toBeNull();
@@ -36,17 +36,15 @@ describe("TomTomAPI", () => {
       });
   });
 
-  test("Able to GET a tile image of a given coordinate", async function() {
+  test("should GET a tile image of a given coordinate", async function() {
     console.log(zoom);
     return TomTomAPIWrapper.getTileImage(point)
       .then(responseData => {
         expect(responseData).not.toBeNull();
         expect(responseData).toBeDefined();
-        expect(typeof responseData).toBe("object");
       })
       .catch(error => {
         logger.error(error);
-        console.log(JSON.stringify(error));
         expect(error).toBeUndefined();
       });
   });

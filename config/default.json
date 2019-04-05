@@ -90,10 +90,24 @@
       },
       "style": {
         "paramName": "style",
+        "defaultStyle": "alps",
         "styles": ["alps", "daisy", "dreamworks", "flame", "fleet", "mini"]
+      },
+      "ParamsRegExp": {
+        "route": "^r[0-9]*$",
+        "marker": "^m[0-9]*$",
+        "lineColor": "^lc[0-9]*$",
+        "lineWidth": "^lw[0-9]*$",
+        "markerFillColor": "^mfc[0-9]*$"
       }
     }
   },
 
-  "Mlg": {}
+  "Mlg": {
+    "Warnings": {
+      "MissingHereAppID": "HERE_APP_ID environment variable is not set. Requests to HERE API will fail.",
+      "MissingHereAppCode": "HERE_APP_CODE environment variable is not set. Requests to HERE API will fail.",
+      "MissingTomTomAPIKey": "TOMTOM_API_KEY environment variable is not set. Requests to TomTom API will fail."
+    }
+  }
 }

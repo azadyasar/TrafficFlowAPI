@@ -92,6 +92,7 @@ export default class TomTomAPIController {
       )
         .then(response => {
           res.type("png");
+          // response.pipe(require("fs").createWriteStream("./test.png"));
           response.pipe(res);
         })
         .catch(error => {

@@ -3,7 +3,6 @@ const config = require("config");
 import MapUtils from "../utils/map";
 
 import logger from "../utils/logger";
-// const logger = require("../utils/logger");
 
 let tomtomTrafficAPIVersionNumber = config.get("TomTom.Traffic.versionNumber");
 let tomtomTrafficZoomLevel = config.get("TomTom.Traffic.DefaultParams.zoom");
@@ -24,10 +23,7 @@ let tomtomAppKey;
 if (config.has("TOMTOM_API_KEY"))
   tomtomAppKey = config.get("TOMTOM_API_KEY").toString();
 else if (process.env.TOMTOM_API_KEY) tomtomAppKey = process.env.TOMTOM_API_KEY;
-else
-  logger.warn(
-    "TOMTOM_API_KEY environment variable is not set. Requests to TomTom API will fail."
-  );
+else logger.warn(config.get("Mlg.Warnings.MissingTomTomAPIKey"));
 
 let tomtomTrafficBaseURL = config
   .get("TomTom.Traffic.APIEndpointTemplate")
