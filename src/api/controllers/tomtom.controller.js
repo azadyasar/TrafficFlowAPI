@@ -58,11 +58,15 @@ export default class TomTomAPIController {
           res.json(response);
         })
         .catch(error => {
-          res
-            .status(403)
-            .send(
-              `Error occured during TomTom API call ${error} - ${error.stack}`
-            );
+          logger.error(
+            "Error occured during TomTom API call " +
+              error.error +
+              `, statusCode: ${error.statusCode} stack: ${error.stack}`
+          );
+          res.status(500).send({
+            descr: "Intermediate node error check your input parameters",
+            statusCode: error.statusCode
+          });
         });
     });
   }
@@ -111,11 +115,14 @@ export default class TomTomAPIController {
         })
         .catch(error => {
           logger.error(
-            "An internal error occured while calling -getTileTimage-.Details: " +
-              err +
-              `Stack: ${err.stack}`
+            "Error occured during TomTom API call " +
+              error.error +
+              `, statusCode: ${error.statusCode} stack: ${error.stack}`
           );
-          res.status(500).send(`An internal server error occured.`);
+          res.status(500).send({
+            descr: "Intermediate node error check your input parameters",
+            statusCode: error.statusCode
+          });
         });
     });
   }

@@ -77,9 +77,12 @@ export default class TomTomAPIWrapper {
             /**
              * Should we resolve with null, when we have a response wity non-200 response code?
              */
-            reject(
-              new Error("Response from TomTomFlow has a non-200 status = notOK")
-            );
+            reject({
+              error: new Error(
+                "Response from TomTomFlow has a non-200 status = notOK"
+              ),
+              statusCode: response.status
+            });
           }
           let tomtomFlowSegmentData = TomTomUtils.storeFlowSegmentData(
             response.data
@@ -92,7 +95,17 @@ export default class TomTomAPIWrapper {
             `Error occured during GET request of getFlowInfoCoord: Details: ${error}` +
               `Stack: ${error.stack}`
           );
-          reject(error);
+          if (error.response && error.response.status)
+            reject({
+              error: new Error(
+                "Response from TomTom API has a non-200 status code"
+              ),
+              statusCode: error.response.status
+            });
+          else
+            reject({
+              error: new Error("Unknown error occured durin TomTom API call")
+            });
         });
     });
   }
@@ -129,7 +142,20 @@ export default class TomTomAPIWrapper {
           }
         })
         .then(response => {
-          logger.info(`Got response -getTileImage-: ${response}`);
+          logger.info(
+            `Got response -getTileImage-: ${response} with status code: ${
+              response.status
+            }`
+          );
+          // Reject if the response is not OK
+          if (response.status !== 200)
+            reject({
+              error: new Error(
+                "Response from TomTomTile has a non-200 status = notOK"
+              ),
+              statusCode: response.status
+            });
+
           resolve(response.data);
         })
         .catch(error => {
@@ -137,7 +163,17 @@ export default class TomTomAPIWrapper {
             `Error occured during GET request of getTileImage: ${error}` +
               ` Stack: ${error.stack}`
           );
-          reject(error);
+          if (error.response && error.response.status)
+            reject({
+              error: new Error(
+                "Response from TomTom API has a non-200 status code"
+              ),
+              statusCode: error.response.status
+            });
+          else
+            reject({
+              error: new Error("Unknown error occured durin TomTom API call")
+            });
         });
     });
   }
@@ -208,4 +244,10 @@ class TomTomUtils {
  * @property {number} zoom - The zoom level of the tile to be rendered
  * @property {number} xtile - The x coordinate of the tile on a zoom grid
  * @property {number} ytile - The y coordinate of the tile on a zoom grid
+ */
+
+/**
+ * @typedef AxiosResponseError
+ * @typedef {error} error - The actual error
+ * @typedef {number} statusCode - The status code. Gives more information about the cause of the error
  */
