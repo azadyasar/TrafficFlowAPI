@@ -1,6 +1,19 @@
 import HereAPIWrapper from "../../services/here.service";
 import Joi from "joi";
 import logger from "../../utils/logger";
+import config from "config";
+
+let hereRouteRegExp = config.get("Here.RouteDisplay.ParamsRegExp.route");
+let hereMarkerRegExp = config.get("Here.RouteDisplay.ParamsRegExp.marker");
+let hereLineColorRegExp = config.get(
+  "Here.RouteDisplay.ParamsRegExp.lineColor"
+);
+let hereLineWidthRegExp = config.get(
+  "Here.RouteDisplay.ParamsRegExp.lineWidth"
+);
+let hereMarkerFillColorRegExp = config.get(
+  "Here.RouteDisplay.ParamsRegExp.markerFillColor"
+);
 
 export default class HereAPIContoller {
   /**
@@ -15,6 +28,7 @@ export default class HereAPIContoller {
     );
     /**
      * TODO
+     * Parse incoming route data
      * Validation, incoming data conversion
      */
     if (!req.query.hasOwnProperty("route")) {

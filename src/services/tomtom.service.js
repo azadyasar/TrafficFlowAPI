@@ -76,7 +76,7 @@ export default class TomTomAPIWrapper {
              */
             reject(
               new Error(
-                "Response status is " +
+                "Response status from TomTom API is " +
                   response.status +
                   ` response: ${response}`
               )
@@ -164,7 +164,15 @@ class TomTomUtils {
     destObject.currentTravelTime = data.currentTravelTime;
     destObject.freeFlowTravelTime = data.freeFlowTravelTime;
     destObject.confidence = data.confidence;
-    destObject.coordinates = Array(data.coordinates.coordinate)[0];
+    const tmpCoords = Array(data.coordinates.coordinate)[0];
+    destObject.nbrOfCoords = tmpCoords.length;
+    destObject.coordinates = [];
+    tmpCoords.forEach(coord => {
+      destObject.coordinates.push({
+        lat: coord.latitude,
+        long: coord.longitude
+      });
+    });
     return destObject;
   }
 }
@@ -186,7 +194,8 @@ class TomTomUtils {
  * @property {number} currentTravelTime - Current travel time of the road
  * @property {number} freeFlowTravelTime - Free flow travel time of the road
  * @property {number} confidence - Confidence of the speed and time information
- * @property {object[]} coordinates - Coordinate array, a line through the direction of the road, starting from the given coordinate
+ * @property {number} nbrOfCoords - Length of the `coordinates` list
+ * @property {Coordinate[]} coordinates - Coordinate array, a line through the direction of the road, starting from the given coordinate
  */
 
 /**

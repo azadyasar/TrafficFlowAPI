@@ -8,7 +8,7 @@ import logger from "../../utils/logger";
  * - `long`: longitute is required
  * - `zoom`: zoom is optional. must be in the range of [0, 22]
  */
-const TomTomCoordReqJoiSchema = {
+const TomTomFlowJoiSchema = {
   lat: Joi.number().required(),
   long: Joi.number().required(),
   zoom: Joi.number()
@@ -18,7 +18,7 @@ const TomTomCoordReqJoiSchema = {
 
 export default class TomTomAPIController {
   /**
-   *
+   * /api/v1/tomtom/flow?coord=48.3232,2.3242
    * @param {Express.Request} req
    * @param {Express.Response} res
    * @param {Express.next} next
@@ -30,9 +30,9 @@ export default class TomTomAPIController {
       )}`
     );
     let validateQuery = {};
-    // 403 if the client does not provide a coordinate
+    // 400 if the client does not provide a coordinate
     if (!req.query.hasOwnProperty("coord")) {
-      res.status(403).send("You must provide a coordinate");
+      res.status(400).send("You must provide a coordinate");
       return;
     }
     // Parse input coordinate into lat, long of the reqParams.
@@ -43,7 +43,7 @@ export default class TomTomAPIController {
     /**
      * Validate the input data.
      */
-    Joi.validate(validateQuery, TomTomCoordReqJoiSchema, (err, value) => {
+    Joi.validate(validateQuery, TomTomFlowJoiSchema, (err, value) => {
       if (err) {
         logger.error(
           `Validation failed inside -apiGetTrafficFlowData-: ${err}`
@@ -80,7 +80,7 @@ export default class TomTomAPIController {
     /**
      * Validate the input data.
      */
-    Joi.validate(validateQuery, TomTomCoordReqJoiSchema, (error, value) => {
+    Joi.validate(validateQuery, TomTomFlowJoiSchema, (error, value) => {
       if (error) {
         logger.error(`Validation failed inside -apiGetMapTileImage-: ${err}`);
         res.send(`Invalid input. Details: ${error}`);

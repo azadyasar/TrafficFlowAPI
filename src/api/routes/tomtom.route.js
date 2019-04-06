@@ -1,5 +1,5 @@
 import { Router } from "express";
-import TomTomAPIController from "../controllers/tomtom";
+import TomTomAPIController from "../controllers/tomtom.controller";
 
 const router = new Router();
 

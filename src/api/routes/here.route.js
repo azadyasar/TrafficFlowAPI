@@ -1,5 +1,5 @@
 import { Router } from "express";
-import HereAPIContoller from "../controllers/here";
+import HereAPIContoller from "../controllers/here.controller";
 
 const router = new Router();
 

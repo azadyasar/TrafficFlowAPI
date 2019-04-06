@@ -1,13 +1,20 @@
 import axios from "axios";
 import config from "config";
-
 import logger from "../utils/logger";
+import HereUtils from "../utils/here.utils";
 
 /**
  * HERE Map Services API Credentials
  */
 let hereAppID;
 let hereAppCode;
+let hereRouteEndpointURL;
+
+hereRouteEndpointURL = config.get("Here.RouteDisplay.APIEndpointTemplate");
+logger.info(
+  `HERE Maps API Route Display Endpoint URL has been set: ${hereRouteEndpointURL}`
+);
+
 if (config.has("HERE_APP_ID")) hereAppID = config.get("HERE_APP_ID");
 else if (process.env.HERE_APP_ID) hereAppID = process.env.HERE_APP_ID;
 else logger.warn(config.get("Mlg.Warnings.MissingHereAppID"));
@@ -22,10 +29,9 @@ export default class HereAPIWrapper {
    * @returns {Promise<axios.response.data>} A data stream containing the corresponding route image
    */
   static async getRouteFigureFromCoords(routeList) {
-    const hereRouteURL = config.get("Here.RouteDisplay.APIEndpointTemplate");
     logger.info(
       "Executing GET Request from HERE - getRouteFigureFromCoords to " +
-        hereRouteURL
+        hereRouteEndpointURL
     );
     /**
      * Check incoming routeList if it is processable
@@ -39,17 +45,20 @@ export default class HereAPIWrapper {
       );
       return new Promise((_, reject) => reject(error));
     }
-    console.log(routeList);
-    const routeCoords = routeList.geoCoords[0].coords;
+    const routeCoords = routeList.routes[0].coords;
+    let lineColor;
+    if (routeList.routes[0].lineColor)
+      lineColor = routeList.routes[0].lineColor;
+    else lineColor = "008000";
     return new Promise((resolve, reject) => {
       axios
-        .get(hereRouteURL, {
+        .get(hereRouteEndpointURL, {
           responseType: "stream",
           params: {
             app_id: hereAppID,
             app_code: hereAppCode,
             r: HereUtils.convertCoordsToString(routeCoords),
-            lc: "008000",
+            lc: lineColor,
             m: HereUtils.getSourceDestinationCoords(routeCoords, "string"),
             h: 512,
             w: 512,
@@ -72,27 +81,27 @@ export default class HereAPIWrapper {
   }
   /**
    *
-   * @param {string} routeList - A list of coordinates separated by comma
+   * @param {string} coordList - A list of coordinates separated by comma
    * @returns {Promise<axios.response.data>}
    */
-  static async getRouteFigure(routeList) {
-    const hereRouteURL = config.get("Here.RouteDisplay.APIEndpointTemplate");
+  static async getRouteFigure(coordList) {
     logger.info(
-      "Executing GET Request from HERE - getRouteFigure to " + hereRouteURL
+      "Executing GET Request from HERE - getRouteFigure to " +
+        hereRouteEndpointURL
     );
     /**
      * Check incoming routeList if it is processable
      */
     return new Promise((resolve, reject) => {
       axios
-        .get(hereRouteURL, {
+        .get(hereRouteEndpointURL, {
           responseType: "stream",
           params: {
             app_id: hereAppID,
             app_code: hereAppCode,
-            r: routeList,
+            r: coordList,
             lc: "008000",
-            m: HereUtils.getSourceDestCoordsFromString(routeList, "string"),
+            m: HereUtils.getSourceDestCoordsFromString(coordList, "string"),
             h: 512,
             w: 512,
             f: 0
@@ -110,132 +119,52 @@ export default class HereAPIWrapper {
         });
     });
   }
-}
 
-class HereUtils {
   /**
-   * Checks whether the incoming `RouteList` object is correctly initialized
-   * @param {RouteList} routeList
-   * @returns {Promise}
+   *
+   * @param {RouteList} routeList - A list of routes to draw on the map
+   * @returns {Promise<Axios.response.data>}
    */
-  static async checkRouteListArg(routeList) {
+  static async getMultipleRouteFigure(routeList) {
+    /**
+     * Convert routeList to its corresponding query parameter string
+     */
+    let queryParamStr;
+    try {
+      queryParamStr = HereUtils.getQueryParamsForMultipleRoute(routeList);
+    } catch (error) {
+      return new Promise((_, reject) => {
+        reject(error);
+      });
+    }
+
+    /**
+     * Construct the endpoint URL with the query params and make a GET request
+     */
+    const hereMultipleRouteEndpointURL = hereRouteEndpointURL + queryParamStr;
+    logger.info(
+      `Making a GET Request to ${hereMultipleRouteEndpointURL} from getMultipleRouteFigure`
+    );
     return new Promise((resolve, reject) => {
-      if (!routeList) {
-        reject(
-          new Error(
-            "getRouteFigure is called with undefined routeList argument"
-          )
-        );
-      } else if (!routeList.geoCoords) {
-        reject(
-          new Error(
-            "getRouteFigure is called with undefine routeList.geoCoords argument"
-          )
-        );
-      } else if (routeList.geoCoords.length === 0) {
-        reject(
-          new Error(
-            "getRouteFigure is called with empty routeList.geoCoords argument"
-          )
-        );
-      } else resolve();
-    });
-  }
-
-  /**
-   * Given an array of `Coordinate` objects, converts them to `lat1,long1,lat2,...` string.
-   * So that it can be used as a query param during requets to HERE API
-   * @param {Coordinate[]} coords
-   * @returns {string} - A string of coordinates joined as `lat1,long1,lat2,long2,...` to be used as a query parameter
-   */
-  static convertCoordsToString(coords) {
-    if (!coords) throw new Error("coords argument must be defined");
-    else if (typeof coords !== "object")
-      throw new Error("coord argument must be an object");
-
-    var coordArray = [];
-    coords.forEach(coord => {
-      coordArray.push(coord.lat);
-      coordArray.push(coord.long);
-    });
-    return coordArray.join(",");
-  }
-
-  /**
-   *
-   * @param {Coordinate[]} coords - List of coordinates to look for the source and destination
-   * @param {string} returnType - Either `string` or `object`. Representing how the source and
-   *  destination coordinates should be returned. `string` by default.
-   * @returns {SourceDestCoordinates | string}
-   */
-  static getSourceDestinationCoords(coords, returnType = "string") {
-    switch (returnType) {
-      case "string":
-        var coordList = [];
-        coordList.push(coords[0].lat);
-        coordList.push(coords[0].long);
-        coordList.push(coords[coords.length - 1].lat);
-        coordList.push(coords[coords.length - 1].long);
-        return coordList.join(",");
-        break;
-      case "object":
-        const { lat: sourceLat, long: sourceLong } = coords[0];
-        const { lat: destLat, long: destLong } = coords[coords.length - 1];
-        return {
-          source: {
-            lat: sourceLat,
-            long: sourceLong
-          },
-          destination: {
-            lat: destLat,
-            long: destLong
+      axios
+        .get(hereMultipleRouteEndpointURL, {
+          responseType: "stream",
+          params: {
+            app_code: hereAppCode,
+            app_id: hereAppID
           }
-        };
-        break;
-      default:
-        throw new Error(
-          `Invalid returnType=${returnType} supplied. Must be either "string" or "object"`
-        );
-        break;
-    }
-  }
-
-  /**
-   *
-   * @param {string} coords - A string of coordinates separated by commas
-   * @param {string} returnType - Either `string` or `object`.
-   * @returns {SourceDestCoordinates | string}
-   */
-  static getSourceDestCoordsFromString(coords, returnType = "string") {
-    switch (returnType) {
-      case "string":
-        var coordList = coords.split(",");
-        /**
-         * Keep only the first and last 2 elements
-         */
-        coordList.splice(2, coordList.length - 4);
-        return coordList.join(",");
-        break;
-      case "object":
-        var coordList = coords.split(",");
-        coordList.splice(2, coordList.length - 4);
-        return {
-          source: {
-            lat: coordList[0],
-            long: coordList[1]
-          },
-          destination: {
-            lat: coordList[2],
-            long: coordList[3]
-          }
-        };
-        break;
-      default:
-        throw new Error(
-          `Invalid returnType=${returnType} supplied. Must be either "string" or "object"`
-        );
-        break;
-    }
+        })
+        .then(response => {
+          logger.info(`Got response -getMultipleRouteFigure- ${response}`);
+          resolve(response.data);
+        })
+        .catch(error => {
+          logger.error(
+            `Error occured during GET request of -getMultipleRouteFigure- ${error}`
+          );
+          reject(error);
+        });
+    });
   }
 }
 
@@ -248,14 +177,18 @@ class HereUtils {
 
 /**
  *
- * @typedef GeoCoordinateList
+ * @typedef Route
  * @property {Coordinate[]} coords - A list of geo coordinates
+ * @property {Coordinate[]} markers - A list of markers to draw on the route
+ * @property {string} lineColor - Color of the route line. Should be defined as hex
+ * @property {number} lineWidth - Width of the route line
+ * @property {string} markerFillColor - What color the markers should be filled with. Should be defined as hex
  */
 
 /**
  *
  * @typedef RouteList
- * @property {GeoCoordinateList[]} geoCoords - A list of geo-coordinate list. Each GeoCoordinateList defines a route
+ * @property {Route[]} routes - A list of geo-coordinate list. Each GeoCoordinateList defines a route
  */
 
 /**

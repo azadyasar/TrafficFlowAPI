@@ -94,11 +94,16 @@
         "styles": ["alps", "daisy", "dreamworks", "flame", "fleet", "mini"]
       },
       "ParamsRegExp": {
-        "route": "^r[0-9]*$",
-        "marker": "^m[0-9]*$",
-        "lineColor": "^lc[0-9]*$",
-        "lineWidth": "^lw[0-9]*$",
-        "markerFillColor": "^mfc[0-9]*$"
+        "route": "^route[0-9]*$",
+        "marker": "^marker[0-9]*$",
+        "lineColor": "^lcolor[0-9]*$",
+        "lineWidth": "^lwidth[0-9]*$",
+        "markerFillColor": "^mfcolor[0-9]*$"
+      },
+      "DefaultParams": {
+        "lineColor": "008000",
+        "lineWidth": 4,
+        "markerFillColor": "800000"
       }
     }
   },
