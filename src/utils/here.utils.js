@@ -17,7 +17,7 @@ export default class HereUtils {
       } else if (!routeList.routes) {
         reject(
           new Error(
-            "getRouteFigure is called with undefine routeList.geoCoords argument"
+            "getRouteFigure is called with undefined routeList.geoCoords argument"
           )
         );
       } else if (routeList.routes.length === 0) {
@@ -173,6 +173,10 @@ export default class HereUtils {
         queryParamStr = queryParamStr.concat(
           `&lc${routeIdx}=${route.lineColor}`
         );
+      else
+        queryParamStr = queryParamStr.concat(
+          `&lc${routeIdx}=${this.getRandomColor()}`
+        );
       if (route.lineWidth)
         queryParamStr = queryParamStr.concat(
           `&lw${routeIdx}=${route.lineWidth}`
@@ -192,12 +196,21 @@ export default class HereUtils {
         queryParamStr = queryParamStr.concat(
           `&mfc${routeIdx}=${route.markerFillColor}`
         );
+      queryParamStr = queryParamStr.concat("&");
       routeIdx++;
     });
     logger.debug(
       `Query Params String has been constructed by MultipleRoute: ${queryParamStr}`
     );
     return queryParamStr;
+  }
+
+  static getRandomColor() {
+    let letterSet = "0123456789ABCDEF";
+    let colorStr = "";
+    for (let i = 0; i < 6; ++i)
+      colorStr += letterSet[Math.floor(Math.random() * 16)];
+    return colorStr;
   }
 }
 

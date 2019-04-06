@@ -44,7 +44,7 @@ Provides a traffic flow information for the routes.
 
 ### AVL Traffic Layer Endpoints
 
-- `/trajectory` A trajectory of the given coordinate is generated with respect to the flow of the road (in which direction the traffic flows to). Returns an image containing the route of the trajectory. Must provide a `coord` as `lat,long`.
+- `/trajectory` A trajectory of the given coordinate is generated with respect to the flow of the road (in which direction the traffic flows to). Returns an image containing the route of the trajectory. Must provide a `coord` as `lat,long`. Provide `repeat` parameter to get a predictive continuous route. `repeat` should be less than 7 and ideally 5.
 
 ## Miscallenous
 

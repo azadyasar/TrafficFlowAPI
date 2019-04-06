@@ -66,6 +66,11 @@
       "OptionalParams": ["tileSize", "view", "language"]
     },
 
+    "Route": {
+      "baseURL": "api.tomtom.com",
+      "APIEndpointTemplate": "https://api.tomtom.com/routing/1/calculateRoute/SOURCE_DEST/json"
+    },
+
     "FRC0": "Motorway, freeway or other major road",
     "FRC1": "Major road, less important than a motorway",
     "FRC2": "Other major road",

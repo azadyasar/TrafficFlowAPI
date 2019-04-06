@@ -43,7 +43,13 @@ export default class HereAPIContoller {
         response.pipe(res);
       })
       .catch(error => {
-        res.status(403).send(`Error occured during HERE API call: ${error}`);
+        logger.error(
+          `Error occured during HERE API call: ${error}` +
+            `,statusCode: ${error.statusCode} stack: ${error.stack}`
+        );
+        res
+          .status(500)
+          .send(`Intermediate node error. Check your input parameters`);
       });
   }
 }

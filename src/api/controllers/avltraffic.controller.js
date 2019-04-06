@@ -16,7 +16,10 @@ const TomTomFlowJoiSchema = {
   long: Joi.number().required(),
   zoom: Joi.number()
     .min(0)
-    .max(22)
+    .max(22),
+  repeat: Joi.number()
+    .min(1)
+    .max(25)
 };
 
 export default class AvlTrafficLayerController {
@@ -47,7 +50,8 @@ export default class AvlTrafficLayerController {
     let validateQuery = {
       lat: coordList[0],
       long: coordList[1],
-      zoom: req.query.zoom
+      zoom: req.query.zoom,
+      repeat: req.query.repeat
     };
     /**
      * Validate the inpute data
@@ -63,23 +67,31 @@ export default class AvlTrafficLayerController {
           res.send("Invalid input. Details: " + validError);
           return;
         }
-        let tomtomFlowSegmentData;
+
         try {
-          tomtomFlowSegmentData = await TomTomAPIWrapper.getFlowInfoCoord({
+          let tomtomFlowSegmentData,
+            routes = [];
+          const repeatTrajectory = value.repeat || 1;
+          logger.info(`Repeating trajectory for ${repeatTrajectory}`);
+          let currentCoord = {
             lat: value.lat,
             long: value.long
-          });
-          logger.info(
-            `tomtomFlowSegmentData inside -apigetrajectoryfigure is: ${JSON.stringify(
-              tomtomFlowSegmentData
-            )}`
-          );
+          };
+          for (let i = 0; i < repeatTrajectory; i++) {
+            tomtomFlowSegmentData = await TomTomAPIWrapper.getFlowInfoCoord({
+              lat: currentCoord.lat,
+              long: currentCoord.long
+            });
+            logger.info(`Iter #${i + 1}: Received: ${tomtomFlowSegmentData}`);
+            routes.push({ coords: tomtomFlowSegmentData.coordinates });
+            currentCoord =
+              tomtomFlowSegmentData.coordinates[
+                tomtomFlowSegmentData.coordinates.length - 1
+              ];
+          }
+
           HereAPIWrapper.getMultipleRouteFigure({
-            routes: [
-              {
-                coords: tomtomFlowSegmentData.coordinates
-              }
-            ]
+            routes
           })
             .then(response => {
               logger.info(`HERE Api Wrapper returned sending figure`);
@@ -96,7 +108,8 @@ export default class AvlTrafficLayerController {
             });
         } catch (error) {
           logger.error(
-            `An internal error occured during TomTomFlowSegmentData request from apiGetTrajectoryFigure. Details: ${error}`
+            `An internal error occured during TomTomFlowSegmentData request from apiGetTrajectoryFigure. Details: ${error}` +
+              `, stack: ${error.stack}`
           );
           res.status(500).send("Service is currently not functioning");
           return;

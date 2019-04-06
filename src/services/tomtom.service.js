@@ -44,8 +44,11 @@ let tomtomMapBaseURL = config
   .replace("layer", tomtomMapLayer)
   .replace("style", tomtomMapStyle);
 
-logger.info("tomtomTrafficBaseURL is set up: " + tomtomTrafficBaseURL);
-logger.info("tomtomMapBaseURL is set up: " + tomtomMapBaseURL);
+let tomtomRouteBaseURL = config.get("TomTom.Route.APIEndpointTemplate");
+
+logger.info("tomtomTrafficBaseURL has been set up: " + tomtomTrafficBaseURL);
+logger.info("tomtomMapBaseURL has been set up: " + tomtomMapBaseURL);
+logger.info("tomtomRouteBaseURL has been set up: " + tomtomRouteBaseURL);
 
 export default class TomTomAPIWrapper {
   /**
@@ -104,7 +107,7 @@ export default class TomTomAPIWrapper {
             });
           else
             reject({
-              error: new Error("Unknown error occured durin TomTom API call")
+              error: new Error("Unknown error occured during TomTom API call")
             });
         });
     });
@@ -172,7 +175,65 @@ export default class TomTomAPIWrapper {
             });
           else
             reject({
-              error: new Error("Unknown error occured durin TomTom API call")
+              error: new Error("Unknown error occured during TomTom API call")
+            });
+        });
+    });
+  }
+
+  /**
+   * Given a start and end coordinate, calculates the route in between them
+   * @param {Coordinate} sourceCoord - Starting point
+   * @param {Coordinate} destCoord - Destination point
+   * @returns {Promise<Coordinate[]>} - A list of coordinates that defines the route.
+   */
+  static async getRoute(sourceCoord, destCoord) {
+    /**
+     * Construct endpoint URL for calculateRoute
+     */
+    const coordParam =
+      sourceCoord.lat +
+      "," +
+      sourceCoord.long +
+      ":" +
+      destCoord.lat +
+      "," +
+      destCoord.long;
+    const tomtomCalcRouteURL = tomtomRouteBaseURL.replace(
+      "SOURCE_DEST",
+      coordParam
+    );
+    logger.info(`GET request from -getRoute- to :${tomtomCalcRouteURL}`);
+    return new Promise((response, reject) => {
+      axios
+        .get(tomtomCalcRouteURL, {
+          params: {
+            key: tomtomAppKey
+          }
+        })
+        .then(response => {
+          logger.info(`Received response -getRoute-: ${response}`);
+          logger.info(`summary: ${response.data.routes.summary}`);
+          logger.info(`Points: ${response.data.routes.legs.points}`);
+          resolve(response.data.routes.legs.points);
+        })
+        .catch(error => {
+          logger.error(
+            `Error occured during TomTom Route API call -getRoute` +
+              `error: ${error}, statusCode: ${error.response &&
+                error.response.statusCode}` +
+              ` stack: ${error.stack}`
+          );
+          if (error.response && error.response.status)
+            reject({
+              error: new Error(
+                "Response from TomTom API has a non-200 status code"
+              ),
+              statusCode: error.response.status
+            });
+          else
+            reject({
+              error: new Error("Unknown error occured during TomTom API call")
             });
         });
     });

@@ -24,7 +24,7 @@ else if (process.env.HERE_APP_CODE) hereAppCode = process.env.HERE_APP_CODE;
 else logger.warn(config.get("Mlg.Warnings.MissingHereAppCode"));
 
 export default class HereAPIWrapper {
-  /**
+  /** Given a `routeList` returns a Promise of image stream from HERE API
    * @param {RouteList} routeList
    * @returns {Promise<axios.response.data>} A data stream containing the corresponding route image
    */
@@ -37,7 +37,7 @@ export default class HereAPIWrapper {
      * Check incoming routeList if it is processable
      */
     try {
-      await HereUtils.checkRouteListArg(routeList);
+      await HereUtils.isRouteListArgValid(routeList);
     } catch (error) {
       logger.error(
         "Got error while validating routeList arg of getRouteFigureFromCoords. Details: " +
@@ -45,11 +45,17 @@ export default class HereAPIWrapper {
       );
       return new Promise((_, reject) => reject(error));
     }
+
     const routeCoords = routeList.routes[0].coords;
+    /**
+     * TODO
+     * Get lineColor from a config
+     */
     let lineColor;
     if (routeList.routes[0].lineColor)
       lineColor = routeList.routes[0].lineColor;
     else lineColor = "008000";
+
     return new Promise((resolve, reject) => {
       axios
         .get(hereRouteEndpointURL, {
@@ -73,9 +79,21 @@ export default class HereAPIWrapper {
         })
         .catch(error => {
           logger.error(
-            `getRouteFigureFromCoords get request returned with error: ${error}`
+            `getRouteFigureFromCoords get request returned with error: ${error}` +
+              `, statusCode = ${error.response && error.response.status}` +
+              `, stack: ${error.stack}`
           );
-          reject(error);
+          if (error.response && error.response.status)
+            reject({
+              error: new Error(
+                "Response from HERE API has a non-200 status code"
+              ),
+              statusCode: error.response.status
+            });
+          else
+            reject({
+              error: new Error("Unknown error occured during HERE API call")
+            });
         });
     });
   }
@@ -113,9 +131,21 @@ export default class HereAPIWrapper {
         })
         .catch(error => {
           logger.error(
-            `HereRouteFigure get request returned with error: ${error}`
+            `getRouteFigure get request returned with error: ${error}` +
+              `, statusCode = ${error.response && error.response.status}` +
+              `, stack: ${error.stack}`
           );
-          reject(error);
+          if (error.response && error.response.status)
+            reject({
+              error: new Error(
+                "Response from HERE API has a non-200 status code"
+              ),
+              statusCode: error.response.status
+            });
+          else
+            reject({
+              error: new Error("Unknown error occured during HERE API call")
+            });
         });
     });
   }
@@ -160,9 +190,21 @@ export default class HereAPIWrapper {
         })
         .catch(error => {
           logger.error(
-            `Error occured during GET request of -getMultipleRouteFigure- ${error}`
+            `getMultipleRouteFigure get request returned with error: ${error}` +
+              `, statusCode = ${error.response && error.response.status}` +
+              `, stack: ${error.stack}`
           );
-          reject(error);
+          if (error.response && error.response.status)
+            reject({
+              error: new Error(
+                "Response from HERE API has a non-200 status code"
+              ),
+              statusCode: error.response.status
+            });
+          else
+            reject({
+              error: new Error("Unknown error occured during HERE API call")
+            });
         });
     });
   }
