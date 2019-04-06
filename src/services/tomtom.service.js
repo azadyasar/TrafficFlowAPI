@@ -1,5 +1,5 @@
-const axios = require("axios");
-const config = require("config");
+import axios from "axios";
+import config from "config";
 import MapUtils from "../utils/map";
 
 import logger from "../utils/logger";
@@ -25,6 +25,10 @@ if (config.has("TOMTOM_API_KEY"))
 else if (process.env.TOMTOM_API_KEY) tomtomAppKey = process.env.TOMTOM_API_KEY;
 else logger.warn(config.get("Mlg.Warnings.MissingTomTomAPIKey"));
 
+/**
+ * TODO
+ * `zoom` is replaced by the default zoom at the beginning. The client might provide one?
+ */
 let tomtomTrafficBaseURL = config
   .get("TomTom.Traffic.APIEndpointTemplate")
   .replace("versionNumber", tomtomTrafficAPIVersionNumber)
@@ -45,12 +49,11 @@ logger.info("tomtomMapBaseURL is set up: " + tomtomMapBaseURL);
 
 export default class TomTomAPIWrapper {
   /**
-   *
-   * @param {Coordinate} coord - Must be a pair of numbers. Coordinates are expected as parameters during a request.
+   * Given a `coord`, calls TomTom API and returns `TomTomFlowSegmentData`
+   * @param {Coordinate} coord - Must be a `Coordinate` containing `lat` and `long`. Coordinates are expected as parameters during a request.
    * @returns {Promise<TomTomFlowSegmentData>} Returns a promise of the flow segment data
    */
   static async getFlowInfoCoord(coord) {
-    let tomtomFlowSegmentData = {};
     logger.info(
       "Executing GET Request from getFlowInfoCoord " +
         tomtomTrafficBaseURL +
@@ -75,27 +78,19 @@ export default class TomTomAPIWrapper {
              * Should we resolve with null, when we have a response wity non-200 response code?
              */
             reject(
-              new Error(
-                "Response status from TomTom API is " +
-                  response.status +
-                  ` response: ${response}`
-              )
+              new Error("Response from TomTomFlow has a non-200 status = notOK")
             );
           }
-          tomtomFlowSegmentData = TomTomUtils.storeFlowSegmentData(
+          let tomtomFlowSegmentData = TomTomUtils.storeFlowSegmentData(
             response.data
           );
-          logger.info(
-            `Response data -getFlowInfoCoord-: ${JSON.stringify(
-              tomtomFlowSegmentData
-            )}`
-          );
+          logger.info(`Response data -getFlowInfoCoord-}`);
           resolve(tomtomFlowSegmentData);
         })
         .catch(error => {
-          console.log(error);
           logger.error(
-            `Error occured during GET request of getFlowInfoCoord: ${error}`
+            `Error occured during GET request of getFlowInfoCoord: Details: ${error}` +
+              `Stack: ${error.stack}`
           );
           reject(error);
         });
@@ -103,14 +98,14 @@ export default class TomTomAPIWrapper {
   }
 
   /**
-   *
+   *  Given a `Coordinate` and an option `zoom` arguments, returns the corresponding tile image stream.
    * @param {Coordinate} coord - Must be a pair of numbers containing `lat` and `long`. They will be converted to a zoom, xtile, yile triplet.
    * @param {TomTomMapTileRequestOptions} options - Options to be used before and during making a request to TomTom Map Tile API
    * @returns {Promise<axios.response.data>} A data stream containing the image of the tile at a given zoom. Should be used to pipe to another stream e.g., writeStream, or express response stream
    */
   static async getTileImage(coord, options = { zoom: tomtomMapZoomLevel }) {
     /**
-     * `undefined` zoom might come from a client's request. It's not checked in the route handler.
+     * `undefined` `zoom` might come from a client's request. It's not checked in the route handler.
      */
     if (options.zoom === undefined || options.zoom === null)
       options.zoom = tomtomMapZoomLevel;
@@ -139,7 +134,8 @@ export default class TomTomAPIWrapper {
         })
         .catch(error => {
           logger.error(
-            `Error occured during GET request of getTileImage: ${error}`
+            `Error occured during GET request of getTileImage: ${error}` +
+              ` Stack: ${error.stack}`
           );
           reject(error);
         });
@@ -149,7 +145,7 @@ export default class TomTomAPIWrapper {
 
 class TomTomUtils {
   /**
-   *
+   * Parses the incoming flow data from TomTom into a more convenient json format
    * @param {axios.response.data} data - Data containing the traffic flow information of the given coordinate
    * @returns {TomTomFlowSegmentData}
    */
@@ -158,7 +154,9 @@ class TomTomUtils {
     if (data === null || data === undefined) return destObject;
     data = data.flowSegmentData;
     destObject.frc = data.frc;
-    destObject.roadDescription = config.get(`TomTom.${data.frc}`);
+    if (config.has(`TomTom.${data.frc}`))
+      destObject.roadDescription = config.get(`TomTom.${data.frc}`);
+    else destObject.roadDescription = data.frc;
     destObject.currentSpeed = data.currentSpeed;
     destObject.freeFlowSpeed = data.freeFlowSpeed;
     destObject.currentTravelTime = data.currentTravelTime;

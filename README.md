@@ -35,8 +35,16 @@ Provides a traffic flow information for the routes.
 
 ### TomTom Related Endpoints
 
-- `api/v1/tomtom/flow` Returns the flow information of the given coordinate. Must provide a **_coord_** query parameter, **_zom_** is optional.
-- `api/v1/tomtom/tile` Returns the tile image of the given coordinate. Must provide a **_coord_** query parameter, **_zom_** is optional. A zoom level is required to convert the given coordinate to its corresponding tile as it changes with respect to zoom level. Zoom - **_15_** is used by default
+- `/flow` Returns the flow information of the given coordinate. Must provide a **_coord_** query parameter, **_zom_** is optional.
+- `/tile` Returns the tile image of the given coordinate. Must provide a **_coord_** query parameter, **_zom_** is optional. A zoom level is required to convert the given coordinate to its corresponding tile as it changes with respect to zoom level. Zoom - **_15_** is used by default
+
+### HERE Maps API Related Endpoints
+
+- `/routeFigure` A route that corresponds to the given coordinate list is drawn on the map and returned as a stream. Must provide a `route` coordinate array as `lat1,long1,lat2,long2,...,latN,longN`.
+
+### AVL Traffic Layer Endpoints
+
+- `/trajectory` A trajectory of the given coordinate is generated with respect to the flow of the road (in which direction the traffic flows to). Returns an image containing the route of the trajectory. Must provide a `coord` as `lat,long`.
 
 ## Miscallenous
 

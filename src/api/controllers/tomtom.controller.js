@@ -19,6 +19,7 @@ const TomTomFlowJoiSchema = {
 export default class TomTomAPIController {
   /**
    * /api/v1/tomtom/flow?coord=48.3232,2.3242
+   * Given a `coord`, responses with the flow data of that coordinate
    * @param {Express.Request} req
    * @param {Express.Response} res
    * @param {Express.next} next
@@ -29,17 +30,18 @@ export default class TomTomAPIController {
         req.params
       )}`
     );
-    let validateQuery = {};
     // 400 if the client does not provide a coordinate
     if (!req.query.hasOwnProperty("coord")) {
-      res.status(400).send("You must provide a coordinate");
+      res.status(400).send("Provide a coordinate as (coord)");
       return;
     }
     // Parse input coordinate into lat, long of the reqParams.
-    const coord = req.query.coord.split(",");
-    validateQuery.lat = coord[0];
-    validateQuery.long = coord[1];
-    validateQuery.zoom = req.query.zoom;
+    const coordList = req.query.coord.split(",");
+    let validateQuery = {
+      lat: coordList[0],
+      long: coordList[1],
+      zoom: req.query.zoom
+    };
     /**
      * Validate the input data.
      */
@@ -48,7 +50,7 @@ export default class TomTomAPIController {
         logger.error(
           `Validation failed inside -apiGetTrafficFlowData-: ${err}`
         );
-        res.send("Invalid input. Details: " + err);
+        res.send("-coord- parameter is malformed");
         return;
       }
       TomTomAPIWrapper.getFlowInfoCoord({ lat: value.lat, long: value.long })
@@ -56,34 +58,46 @@ export default class TomTomAPIController {
           res.json(response);
         })
         .catch(error => {
-          res.status(403).send(`Error occured during TomTom API call ${error}`);
+          res
+            .status(403)
+            .send(
+              `Error occured during TomTom API call ${error} - ${error.stack}`
+            );
         });
     });
   }
 
+  /**
+   * Given a coordinate and a zoom, converts the coordinate to its corresponding x and y tile coordinates.
+   * If zoom is missing within the query params, 12 is used by default. Returns an image of the resulting tile.
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
   static async apiGetMapTileImage(req, res, next) {
     logger.info(`apiGetMapTileImage got request: ${
       req.path
     }, params: ${JSON.stringify(req.params)}, 
                 query: ${JSON.stringify(req.query)}`);
-    // 403 if the client does not provide a coordinate
+    // 400 if the client does not provide a coordinate
     if (!req.query.hasOwnProperty("coord")) {
-      res.status(403).send("You must provide a coordinate");
+      res.status(400).send("You must provide a coordinate");
       return;
     }
-    let validateQuery = {};
     // Parse input coordinate into lat, long of the reqParams.
-    const coord = req.query.coord.split(",");
-    validateQuery.lat = coord[0];
-    validateQuery.long = coord[1];
-    validateQuery.zoom = req.query.zoom;
+    const coordList = req.query.coord.split(",");
+    let validateQuery = {
+      lat: coordList[0],
+      long: coordList[1],
+      zoom: req.query.zoom
+    };
     /**
      * Validate the input data.
      */
     Joi.validate(validateQuery, TomTomFlowJoiSchema, (error, value) => {
       if (error) {
         logger.error(`Validation failed inside -apiGetMapTileImage-: ${err}`);
-        res.send(`Invalid input. Details: ${error}`);
+        res.send("Query parameters are malformed");
         return;
       }
       TomTomAPIWrapper.getTileImage(
@@ -96,9 +110,12 @@ export default class TomTomAPIController {
           response.pipe(res);
         })
         .catch(error => {
-          res
-            .status(403)
-            .send(`Error occured during TomTom API call: ${error}`);
+          logger.error(
+            "An internal error occured while calling -getTileTimage-.Details: " +
+              err +
+              `Stack: ${err.stack}`
+          );
+          res.status(500).send(`An internal server error occured.`);
         });
     });
   }
