@@ -38,6 +38,8 @@ const routeList = {
   ]
 };
 
+jest.setTimeout(60000);
+
 describe("HereAPI", () => {
   test("should GET a route image from HERE Route ", async () => {
     return HereAPIWrapper.getRouteFigure(routeList)
@@ -51,8 +53,6 @@ describe("HereAPI", () => {
       });
   });
 });
-
-jest.setTimeout(60000);
 
 /**
  * Represents a GPS coordinate

@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import morgan from "morgan";
 import tomtomRouter from "./api/routes/tomtom";
+import hereRouter from "./api/routes/here";
 import logger from "./utils/logger";
 
 const app = express();
@@ -14,7 +15,10 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Register API routes
+app.use("/avlmaps/api/v1", tomtomRouter);
+app.use("/avlmaps/api/v1", hereRouter);
 app.use("/api/v1/tomtom", tomtomRouter);
+app.use("/api/v1/here", hereRouter);
 
 app.use("*", (req, res) => {
   res.status(404).json({ error: "Not Found" });
