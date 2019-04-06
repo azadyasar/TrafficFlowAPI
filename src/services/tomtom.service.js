@@ -204,7 +204,7 @@ export default class TomTomAPIWrapper {
       coordParam
     );
     logger.info(`GET request from -getRoute- to :${tomtomCalcRouteURL}`);
-    return new Promise((response, reject) => {
+    return new Promise((resolve, reject) => {
       axios
         .get(tomtomCalcRouteURL, {
           params: {
@@ -213,9 +213,14 @@ export default class TomTomAPIWrapper {
         })
         .then(response => {
           logger.info(`Received response -getRoute-: ${response}`);
+          logger.info(`response keys: ${Object.keys(response)}`);
+          logger.info(`response data keys: ${Object.keys(response.data)}`);
           logger.info(`summary: ${response.data.routes.summary}`);
-          logger.info(`Points: ${response.data.routes.legs.points}`);
-          resolve(response.data.routes.legs.points);
+          logger.info(`Points: ${response.data.routes[0].legs[0].points}`);
+          resolve({
+            summary: response.data.routes[0].legs[0].summary,
+            points: response.data.routes[0].legs[0].points
+          });
         })
         .catch(error => {
           logger.error(

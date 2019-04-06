@@ -16,6 +16,17 @@ const TomTomFlowJoiSchema = {
     .max(22)
 };
 
+const TomTomRouteParamValidator = Joi.object({
+  source: Joi.object({
+    lat: Joi.number().required(),
+    long: Joi.number().required()
+  }).required(),
+  destination: Joi.object({
+    lat: Joi.number().required(),
+    long: Joi.number().required()
+  }).required()
+});
+
 export default class TomTomAPIController {
   /**
    * /api/v1/tomtom/flow?coord=48.3232,2.3242
@@ -123,6 +134,62 @@ export default class TomTomAPIController {
             descr: "Intermediate node error check your input parameters",
             statusCode: error.statusCode
           });
+        });
+    });
+  }
+
+  /**
+   * Given a source and destination coordinate, returns an optimal path between them.
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  static async apiGetRoute(req, res, next) {
+    logger.info(
+      `apiGetRoute got request: ${req.path}, params: ${JSON.stringify(
+        req.params
+      )}, query: ${req.query} `
+    );
+    // 400 if the client does not provide the source and destination coordinates
+    if (
+      !req.query.hasOwnProperty("source") ||
+      !req.query.hasOwnProperty("dest")
+    ) {
+      res.status(403).send("source and dest query params are missing");
+      return;
+    }
+    // Parse incoming source and dest coordinates
+    let validateQuery = {};
+    let tmpCoordList = req.query.source.split(",");
+    validateQuery.source = {
+      lat: tmpCoordList[0],
+      long: tmpCoordList[1]
+    };
+    tmpCoordList = req.query.dest.split(",");
+    validateQuery.destination = {
+      lat: tmpCoordList[0],
+      long: tmpCoordList[1]
+    };
+
+    TomTomRouteParamValidator.validate(validateQuery, (validError, value) => {
+      if (validError) {
+        logger.error(
+          `Validation failed inside -apiGetRoute-: ${validError}` +
+            `, stack: ${validError.stack}`
+        );
+        res.status(403).send("Malformed query. Fix your parameters");
+        return;
+      }
+      TomTomAPIWrapper.getRoute(value.source, value.destination)
+        .then(result => {
+          logger.info(`Got result from the TomTomAPIWrapper: ${result}`);
+          res.send(result);
+        })
+        .catch(reqError => {
+          logger.error(
+            `getRoute got error ${reqError}, stack: ${reqError.stack}`
+          );
+          res.status(400).send("Check your parameters");
         });
     });
   }

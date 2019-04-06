@@ -8,5 +8,6 @@ router.get("/", (req, res) => {
 });
 router.route("/flow").get(TomTomAPIController.apiGetTrafficFlowData);
 router.route("/tile").get(TomTomAPIController.apiGetMapTileImage);
+router.route("/route").get(TomTomAPIController.apiGetRoute);
 
 export default router;
