@@ -9,5 +9,6 @@ router.get("/", (req, res) => {
 router
   .route("/trajectory")
   .get(AvlTrafficLayerController.apiGetTrajectoryFigure);
+router.route("/route/figure").get(AvlTrafficLayerController.apiGetRouteFigure);
 
 export default router;

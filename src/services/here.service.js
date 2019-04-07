@@ -37,16 +37,18 @@ export default class HereAPIWrapper {
      * Check incoming routeList if it is processable
      */
     try {
-      await HereUtils.isRouteListArgValid(routeList);
+      await HereUtils.checkRouteListArg(routeList);
     } catch (error) {
       logger.error(
         "Got error while validating routeList arg of getRouteFigureFromCoords. Details: " +
-          error
+          error +
+          `, stack: ${error.stack}`
       );
       return new Promise((_, reject) => reject(error));
     }
 
     const routeCoords = routeList.routes[0].coords;
+    logger.info("Received routeCoords: " + JSON.stringify(routeCoords));
     /**
      * TODO
      * Get lineColor from a config
@@ -72,9 +74,7 @@ export default class HereAPIWrapper {
           }
         })
         .then(response => {
-          logger.info(
-            "getRouteFigureFromCoords got response: " + Object.keys(response)
-          );
+          logger.info("getRouteFigureFromCoords got response");
           resolve(response.data);
         })
         .catch(error => {
@@ -99,7 +99,7 @@ export default class HereAPIWrapper {
   }
   /**
    *
-   * @param {string} coordList - A list of coordinates separated by comma
+   * @param {string} coordList - A list of coordinates separated by commas
    * @returns {Promise<axios.response.data>}
    */
   static async getRouteFigure(coordList) {

@@ -155,7 +155,7 @@ export default class TomTomAPIController {
       !req.query.hasOwnProperty("source") ||
       !req.query.hasOwnProperty("dest")
     ) {
-      res.status(403).send("source and dest query params are missing");
+      res.status(403).send("-source- and -dest- query parameters are missing");
       return;
     }
     // Parse incoming source and dest coordinates
@@ -194,3 +194,9 @@ export default class TomTomAPIController {
     });
   }
 }
+
+/**
+ * @typedef TomTomRoute
+ * @property {string} summary
+ * @property {Coordinate[0]} points
+ */

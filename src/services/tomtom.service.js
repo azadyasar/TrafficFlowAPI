@@ -185,7 +185,8 @@ export default class TomTomAPIWrapper {
    * Given a start and end coordinate, calculates the route in between them
    * @param {Coordinate} sourceCoord - Starting point
    * @param {Coordinate} destCoord - Destination point
-   * @returns {Promise<Coordinate[]>} - A list of coordinates that defines the route.
+   * @returns {Promise<TomTomRoute>} - A list of coordinates and a summary
+   *  that defines the route.
    */
   static async getRoute(sourceCoord, destCoord) {
     /**
@@ -212,14 +213,16 @@ export default class TomTomAPIWrapper {
           }
         })
         .then(response => {
-          logger.info(`Received response -getRoute-: ${response}`);
-          logger.info(`response keys: ${Object.keys(response)}`);
-          logger.info(`response data keys: ${Object.keys(response.data)}`);
-          logger.info(`summary: ${response.data.routes.summary}`);
-          logger.info(`Points: ${response.data.routes[0].legs[0].points}`);
+          logger.info(`Received response TomTomService/getRoute`);
+          // TomTom returns points with latitude, longitude format.
+          let coordinates = response.data.routes[0].legs[0].points.map(
+            coord => {
+              return { lat: coord.latitude, long: coord.longitude };
+            }
+          );
           resolve({
             summary: response.data.routes[0].legs[0].summary,
-            points: response.data.routes[0].legs[0].points
+            points: coordinates
           });
         })
         .catch(error => {
@@ -296,6 +299,12 @@ class TomTomUtils {
  * @property {number} confidence - Confidence of the speed and time information
  * @property {number} nbrOfCoords - Length of the `coordinates` list
  * @property {Coordinate[]} coordinates - Coordinate array, a line through the direction of the road, starting from the given coordinate
+ */
+
+/**
+ * @typedef TomTomRoute
+ * @property {string} summary
+ * @property {Coordinate[0]} points
  */
 
 /**
