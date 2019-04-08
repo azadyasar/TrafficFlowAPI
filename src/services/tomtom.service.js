@@ -95,7 +95,10 @@ export default class TomTomAPIWrapper {
         })
         .catch(error => {
           logger.error(
-            `Error occured during GET request of getFlowInfoCoord: Details: ${error}` +
+            `Error occured during GET request of getFlowInfoCoord. Request to coord: ${JSON.stringify(
+              coord
+            )}` +
+              `Details: ${error}` +
               `Stack: ${error.stack}`
           );
           if (error.response && error.response.status)

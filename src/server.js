@@ -18,7 +18,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Register API routes
 app.use("/api/v1/tomtom", tomtomRouter);
 app.use("/api/v1/here", hereRouter);
-app.use("/api/v1/avl/", avlTrafficRouter);
+app.use("/api/v1/avl", avlTrafficRouter);
 
 app.use("*", (req, res) => {
   res.status(404).json({ error: "Not Found" });

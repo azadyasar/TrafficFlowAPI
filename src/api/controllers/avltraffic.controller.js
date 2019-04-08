@@ -23,7 +23,7 @@ const TomTomFlowJoiSchema = {
     .max(25)
 };
 
-const AvlRouteFigureParamValidator = Joi.object({
+const SourceDestParamValidator = Joi.object({
   source: Joi.object({
     lat: Joi.number().required(),
     long: Joi.number().required()
@@ -33,6 +33,17 @@ const AvlRouteFigureParamValidator = Joi.object({
     long: Joi.number().required()
   }).required()
 });
+
+function getPromiseAlmost(promiseList) {
+  return Promise.all(
+    promiseList.map(p =>
+      p.catch(e => {
+        e.failure = true;
+        return e;
+      })
+    )
+  );
+}
 
 export default class AvlTrafficLayerController {
   /**
@@ -87,6 +98,7 @@ export default class AvlTrafficLayerController {
         try {
           let tomtomFlowSegmentData,
             routes = [];
+          // if the client doesn't provide a `repeat` parameter
           const repeatTrajectory = value.repeat || 1;
           logger.info(`Repeating trajectory for ${repeatTrajectory}`);
           let currentCoord = {
@@ -155,7 +167,7 @@ export default class AvlTrafficLayerController {
       !req.query.hasOwnProperty("source") ||
       !req.query.hasOwnProperty("dest")
     ) {
-      res.status(403).send("-source- and -dest- query parameters are missing");
+      res.status(400).send("-source- and -dest- query parameters are missing");
       return;
     }
 
@@ -172,7 +184,7 @@ export default class AvlTrafficLayerController {
       long: tmpCoordList[1]
     };
 
-    AvlRouteFigureParamValidator.validate(
+    SourceDestParamValidator.validate(
       validateQuery,
       async (validError, value) => {
         if (validError) {
@@ -180,7 +192,7 @@ export default class AvlTrafficLayerController {
             `Validation failed inside -apiGetRouteFigure(avl)- :${validError}` +
               `, stack: ${validError.stack()}`
           );
-          res.status(403).send("Malformed query. Fix your parameters");
+          res.status(400).send("Malformed query. Fix your parameters");
           return;
         }
 
@@ -192,6 +204,7 @@ export default class AvlTrafficLayerController {
           );
           /**
            * Pack the returned list of points(or route) into RouteList object
+           * because getRouteFigureFromCoords expects a RouteList object
            * RouteList {
            *  routes: [
            *    {
@@ -219,6 +232,112 @@ export default class AvlTrafficLayerController {
               `, stack: ${error.stack}`
           );
           res.status(500).send("An internal error occured");
+        }
+      }
+    );
+  }
+
+  /**
+   * /api/v1/avl/route/flow
+   * @summary Given a source and a destination coordinate, returns a list of coordinates
+   * that defines a route between them. Each coordinate also includes information
+   * such as freeFlowSpeed, currentFlowSpeed, etc.
+   * It first makes a request to the TomTom calcRoute endpoint, then uses
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  static async apiGetRouteTrafficFlow(req, res, next) {
+    logger.info(
+      `apiGetRouteTrafficFlow got request: ${req.path}` +
+        `, params: ${JSON.stringify(req.params)}, query: ${JSON.stringify(
+          req.query
+        )}`
+    );
+
+    // 400 if the client does not provide the source and destination coordinates
+    if (
+      !req.query.hasOwnProperty("source") ||
+      !req.query.hasOwnProperty("dest")
+    ) {
+      res.status(400).send("-source- and -dest- query parameters are missing");
+      return;
+    }
+
+    // Parse incoming source and dest coordinates
+    let validateQuery = {};
+    let tmpCoordList = req.query.source.split(",");
+    validateQuery.source = {
+      lat: tmpCoordList[0],
+      long: tmpCoordList[1]
+    };
+    tmpCoordList = req.query.dest.split(",");
+    validateQuery.destination = {
+      lat: tmpCoordList[0],
+      long: tmpCoordList[1]
+    };
+
+    SourceDestParamValidator.validate(
+      validateQuery,
+      async (validError, value) => {
+        if (validError) {
+          logger.error(
+            `Validation failed inside -apiGetRouteTrafficFlow-: ${validError}` +
+              `, stack: ${validError.stack}`
+          );
+          res.status(400).send("Malformed query. Fix your parameters");
+          return;
+        }
+
+        // Get a route between source and destination coordinates
+        try {
+          const routeResult = await TomTomAPIWrapper.getRoute(
+            value.source,
+            value.destination
+          );
+          let pointFlowPromList = [];
+          routeResult.points.forEach(point => {
+            logger.debug(`Scanning the coord: ${JSON.stringify(point)}`);
+            let prom = TomTomAPIWrapper.getFlowInfoCoord(point);
+            pointFlowPromList.push(prom);
+          });
+          const promiseAlmost = getPromiseAlmost(pointFlowPromList);
+          let responseData = { coords: [] };
+          promiseAlmost
+            .then(flowInfoList => {
+              flowInfoList.forEach(flowInfo => {
+                if (responseData.failure) {
+                  logger.warn(`Something went wrong ${responseData}`);
+                  return;
+                }
+                // Check if flowInfo has information
+                if (!flowInfo.coordinates) {
+                  logger.warn(`${flowInfo} doesn't have any info`);
+                  return;
+                }
+                responseData.coords.push({
+                  coord: flowInfo.coordinates[0],
+                  freeFlowSpeed: flowInfo.freeFlowSpeed,
+                  currentSpeed: flowInfo.currentSpeed
+                });
+              });
+              res.json(responseData);
+            })
+            .catch(error => {
+              logger.error(
+                `An error occured during multiple flow request to TomTom ${error}` +
+                  `, stack: ${error.stack}`
+              );
+              res.status(500).send("Internal error occured.");
+              return;
+            });
+        } catch (error) {
+          logger.error(
+            `An error occured inside -apiGetRouteTrafficFlow- ${error}` +
+              `, stack: ${error.stack}`
+          );
+          res.send(500).send("Internal error occured.");
+          return;
         }
       }
     );
@@ -265,5 +384,5 @@ export default class AvlTrafficLayerController {
 /**
  * @typedef TomTomRoute
  * @property {string} summary
- * @property {Coordinate[0]} points
+ * @property {Coordinate[]} points
  */

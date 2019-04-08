@@ -10,5 +10,8 @@ router
   .route("/trajectory")
   .get(AvlTrafficLayerController.apiGetTrajectoryFigure);
 router.route("/route/figure").get(AvlTrafficLayerController.apiGetRouteFigure);
+router
+  .route("/route/flow")
+  .get(AvlTrafficLayerController.apiGetRouteTrafficFlow);
 
 export default router;
