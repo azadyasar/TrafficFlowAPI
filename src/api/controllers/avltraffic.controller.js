@@ -45,6 +45,19 @@ function getPromiseAlmost(promiseList) {
   );
 }
 
+/**
+ *
+ * @param {Coordinate[]} points
+ * @param {number} stepSize
+ * @returns {Coordinate[]}
+ */
+function reduceRoutePoints(points, stepSize = 10) {
+  let reducedPoints = [];
+  for (let i = 0; i < points.length; i += stepSize)
+    reducedPoints.push(points[i]);
+  return reducedPoints;
+}
+
 export default class AvlTrafficLayerController {
   /**
    * @summary Request must contain a coord parameter.
@@ -202,6 +215,15 @@ export default class AvlTrafficLayerController {
             value.source,
             value.destination
           );
+
+          /**
+           * Reduce route coordinates if the client wants to render markers in order
+           * not to run out of markers.
+           */
+          let filteredCoordinates;
+          if (req.query.useMarker)
+            filteredCoordinates = reduceRoutePoints(routeResult.points);
+          else filteredCoordinates = routeResult.points;
           /**
            * Pack the returned list of points(or route) into RouteList object
            * because getRouteFigureFromCoords expects a RouteList object
@@ -213,9 +235,12 @@ export default class AvlTrafficLayerController {
            *  ]
            * }
            */
-          HereAPIWrapper.getRouteFigureFromCoords({
-            routes: [{ coords: routeResult.points }]
-          })
+          HereAPIWrapper.getRouteFigureFromCoords(
+            {
+              routes: [{ coords: filteredCoordinates }]
+            },
+            { useMarker: req.query.useMarker }
+          )
             .then(hereFigureResult => {
               hereFigureResult.pipe(res);
             })
@@ -318,14 +343,18 @@ export default class AvlTrafficLayerController {
                 responseData.coords.push({
                   coord: flowInfo.coordinates[0],
                   freeFlowSpeed: flowInfo.freeFlowSpeed,
-                  currentSpeed: flowInfo.currentSpeed
+                  currentSpeed: flowInfo.currentSpeed,
+                  currentTravelTime: flowInfo.currentTravelTime,
+                  freeFlowTravelTime: flowInfo.freeFlowTravelTime,
+                  confidence: flowInfo.confidence,
+                  frc: flowInfo.frc
                 });
               });
               res.json(responseData);
             })
             .catch(error => {
               logger.error(
-                `An error occured during multiple flow request to TomTom ${error}` +
+                `An error occured during multiple flow requests to TomTom ${error}` +
                   `, stack: ${error.stack}`
               );
               res.status(500).send("Internal error occured.");

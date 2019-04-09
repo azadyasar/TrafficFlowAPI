@@ -26,12 +26,19 @@ else logger.warn(config.get("Mlg.Warnings.MissingHereAppCode"));
 export default class HereAPIWrapper {
   /** Given a `routeList` returns a Promise of image stream from HERE API
    * @param {RouteList} routeList
+   * @param {object} options - A list options to be used to during the construction
+   * of the URL query
+   *  + useMarker: If true, uses points to draw markers rather than a route line
    * @returns {Promise<axios.response.data>} A data stream containing the corresponding route image
    */
-  static async getRouteFigureFromCoords(routeList) {
+  static async getRouteFigureFromCoords(
+    routeList,
+    options = { useMarker: false }
+  ) {
     logger.info(
       "Executing GET Request from HERE - getRouteFigureFromCoords to " +
-        hereRouteEndpointURL
+        hereRouteEndpointURL +
+        `, options: ${JSON.stringify(options)}`
     );
     /**
      * Check incoming routeList if it is processable
@@ -65,9 +72,13 @@ export default class HereAPIWrapper {
           params: {
             app_id: hereAppID,
             app_code: hereAppCode,
-            r: HereUtils.convertCoordsToString(routeCoords),
+            r: options.useMarker
+              ? ""
+              : HereUtils.convertCoordsToString(routeCoords),
             lc: lineColor,
-            m: HereUtils.getSourceDestinationCoords(routeCoords, "string"),
+            m: options.useMarker
+              ? HereUtils.convertCoordsToString(routeCoords)
+              : HereUtils.getSourceDestinationCoords(routeCoords, "string"),
             h: 512,
             w: 512,
             f: 0
