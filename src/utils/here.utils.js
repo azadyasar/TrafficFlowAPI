@@ -50,7 +50,9 @@ export default class HereUtils {
   }
 
   /**
-   *
+   * Given a list of coordinates returns the source (first element) and destination (last element)
+   * either in a `SourceDestCoordinates` type which used `Coordinate` internally or in a string format
+   * of `lat1,long1,lat2,long2`
    * @param {Coordinate[]} coords - List of coordinates to look for the source and destination
    * @param {string} returnType - Either `string` or `object`. Representing how the source and
    *  destination coordinates should be returned. `string` by default.
@@ -99,6 +101,7 @@ export default class HereUtils {
       case "string":
         var coordList = coords.split(",");
         /**
+         * Remove element starting from the index 2 until the index `length - 4`
          * Keep only the first and last 2 elements
          */
         coordList.splice(2, coordList.length - 4);

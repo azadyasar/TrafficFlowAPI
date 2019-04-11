@@ -3,8 +3,10 @@ import HereAPIWrapper from "../../services/here.service";
 import axios from "axios";
 import logger from "../../utils/logger";
 import HereUtils from "../../utils/here.utils";
+import MapUtils from "../../utils/map";
 import Joi from "joi";
-import { resolve } from "dns";
+
+const DISTANCE_THRESHOLD = 500;
 
 /**
  * A Joi Validation Schema to be used againts TomTom's Flow API Requests.
@@ -263,6 +265,12 @@ export default class AvlTrafficLayerController {
   }
 
   /**
+   * @todo Filter out the coordinates of a route, remove the ones that are too close
+   * to each other. Specify a parameter that the end user can define (in a predefined
+   * range) then make sure that the consecutive coordinates have at least the given
+   * distance.
+   */
+  /**
    * /api/v1/avl/route/flow
    * @summary Given a source and a destination coordinate, returns a list of coordinates
    * that defines a route between them. Each coordinate also includes information
@@ -314,15 +322,35 @@ export default class AvlTrafficLayerController {
           return;
         }
 
-        // Get a route between source and destination coordinates
+        // Get a route between the source and destination coordinates
         try {
           const routeResult = await TomTomAPIWrapper.getRoute(
             value.source,
             value.destination
           );
           let pointFlowPromList = [];
+          let lastCoordinate = {
+            lat: 0,
+            long: 0
+          };
+          /**
+           * Scan through all of the points and make sure that consecutive coordinates are at least
+           * `DISTANCE_THRESHOLD` meters far away from each other. If this condition fails to hold
+           * for two consecutive coordinates, then don't update the lastCoordinate.
+           *
+           */
           routeResult.points.forEach(point => {
             logger.debug(`Scanning the coord: ${JSON.stringify(point)}`);
+            const distance = MapUtils.getDistance(lastCoordinate, point);
+            logger.debug(
+              `Distance calculated between ${JSON.stringify(lastCoordinate)}` +
+                ` - ${JSON.stringify(point)}: ${distance}`
+            );
+            if (distance < DISTANCE_THRESHOLD) {
+              logger.debug("Distance is less than the threshold, skipping");
+              return;
+            }
+            lastCoordinate = point;
             let prom = TomTomAPIWrapper.getFlowInfoCoord(point);
             pointFlowPromList.push(prom);
           });

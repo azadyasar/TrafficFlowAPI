@@ -307,7 +307,7 @@ class TomTomUtils {
 /**
  * @typedef TomTomRoute
  * @property {string} summary
- * @property {Coordinate[0]} points
+ * @property {Coordinate[]} points
  */
 
 /**

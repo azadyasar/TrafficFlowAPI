@@ -1,8 +1,34 @@
 import logger from "./logger";
+
+const EARTH_RADIUS = 6371 * 1000; // in meters
 /**
  * Provides map related utility functions
  */
 export default class MapUtils {
+  /**
+   * Given two coordinates returns the distance between them in meters.
+   * Makes use of the Haversine formula
+   * @param {Coordinate} coord1 - Source/First/Starting coordinate
+   * @param {Coordinate} coord2 - Destination/Second/Ending coordinate
+   * @returns {number} - Returns the distance between the given two coordinates
+   * in meters.
+   */
+  static getDistance(coord1, coord2) {
+    let latRadius = this.convertDegreeToRadians(coord2.lat - coord1.lat);
+    let longRadius = this.convertDegreeToRadians(coord2.long - coord1.long);
+    let latRadiusSin = Math.sin(latRadius / 2);
+    let longRadiusSin = Math.sin(longRadius / 2);
+
+    let a =
+      latRadiusSin * latRadiusSin +
+      Math.cos(this.convertDegreeToRadians(coord1.lat)) *
+        Math.cos(this.convertDegreeToRadians(coord2.lat)) *
+        longRadiusSin *
+        longRadiusSin;
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return EARTH_RADIUS * c;
+  }
+
   /**
    * Given a coordinate and a desired zoom, returns an object containing zoom, xtile, and ytile of the tile
    * that the given coordinate lies in
@@ -43,6 +69,10 @@ export default class MapUtils {
     result.lat =
       (180 / Math.PI) * Math.atan(0.5 * (Math.exp(m) - Math.exp(-m)));
     return result;
+  }
+
+  static convertDegreeToRadians(degree) {
+    return degree * (Math.PI / 180);
   }
 }
 
