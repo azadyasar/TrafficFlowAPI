@@ -1,4 +1,7 @@
 import logger from "../utils/logger";
+import MapUtils from "./map";
+
+const DISTANCE_THRESHOLD = 500;
 
 export default class HereUtils {
   /**
@@ -34,15 +37,30 @@ export default class HereUtils {
    * Given an array of `Coordinate` objects, converts them to `lat1,long1,lat2,...` string.
    * So that it can be used as a query param during requets to HERE API
    * @param {Coordinate[]} coords
+   * @param {boolean} reduceCoords - Skip coordinates that are close to each other
    * @returns {string} - A string of coordinates joined as `lat1,long1,lat2,long2,...` to be used as a query parameter
    */
-  static convertCoordsToString(coords) {
+  static convertCoordsToString(coords, reduction = false) {
     if (!coords) throw new Error("coords argument must be defined");
     else if (typeof coords !== "object")
       throw new Error("coord argument must be an object");
 
+    let reduceCoords = [];
+    let lastCoordinate = {
+      lat: 0,
+      long: 0
+    };
+    if (reduction) {
+      coords.forEach(coord => {
+        const distance = MapUtils.getDistance(lastCoordinate, coord);
+        if (distance < DISTANCE_THRESHOLD) return;
+        lastCoordinate = coord;
+        reduceCoords.push(coord);
+      });
+    }
+
     var coordArray = [];
-    coords.forEach(coord => {
+    reduceCoords.forEach(coord => {
       coordArray.push(coord.lat);
       coordArray.push(coord.long);
     });

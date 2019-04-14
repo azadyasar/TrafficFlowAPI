@@ -65,14 +65,23 @@ export default class HereAPIWrapper {
       lineColor = routeList.routes[0].lineColor;
     else lineColor = "008000";
 
-    return new Promise((resolve, reject) => {
-      axios
-        .get(hereRouteEndpointURL, {
-          responseType: "stream",
-          params: {
-            app_id: hereAppID,
-            app_code: hereAppCode,
-            r: options.useMarker
+    logger.debug(
+      `r is : ${JSON.stringify(HereUtils.convertCoordsToString(routeCoords))}`
+    );
+    logger.debug(
+      `m is ${JSON.stringify(
+        HereUtils.getSourceDestinationCoords(routeCoords, "string")
+      )}`
+    );
+    const txt =
+      "r=" +
+      HereUtils.convertCoordsToString(routeCoords, true) +
+      "&m=" +
+      HereUtils.getSourceDestinationCoords(routeCoords, "string") +
+      "&lc=" +
+      lineColor +
+      "&h=512&w=512";
+    /*  r: options.useMarker
               ? ""
               : HereUtils.convertCoordsToString(routeCoords),
             lc: lineColor,
@@ -81,7 +90,14 @@ export default class HereAPIWrapper {
               : HereUtils.getSourceDestinationCoords(routeCoords, "string"),
             h: 512,
             w: 512,
-            f: 0
+            f: 0 */
+    return new Promise((resolve, reject) => {
+      axios
+        .post(hereRouteEndpointURL, txt, {
+          responseType: "stream",
+          params: {
+            app_id: hereAppID,
+            app_code: hereAppCode
           }
         })
         .then(response => {

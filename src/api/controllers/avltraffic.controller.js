@@ -205,7 +205,7 @@ export default class AvlTrafficLayerController {
         if (validError) {
           logger.error(
             `Validation failed inside -apiGetRouteFigure(avl)- :${validError}` +
-              `, stack: ${validError.stack()}`
+              `, stack: ${validError.stack}`
           );
           res.status(400).send("Malformed query. Fix your parameters");
           return;
