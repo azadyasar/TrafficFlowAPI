@@ -3,10 +3,41 @@ import HereAPIWrapper from "../../services/here.service";
 import axios from "axios";
 import logger from "../../utils/logger";
 import HereUtils from "../../utils/here.utils";
-import MapUtils from "../../utils/map";
+import MapUtils from "../../utils/map.utils";
 import Joi from "joi";
+import config from "config";
 
-const DISTANCE_THRESHOLD = 500;
+/**
+ * Distance threshold between consecutive coordinates for an intracity route
+ */
+const DISTANCE_THRESHOLD_INTRACITY = config.get(
+  "MapUtils.DistanceThresholdIntraCity"
+);
+/**
+ * Distance threshold between consecutive coordinates for an intercity route
+ */
+const DISTANCE_THRESHOLD_INTERCITY = config.get(
+  "MapUtils.DistanceThresholdInterCity"
+);
+/**
+ * How long can a route be in order to be regarded as Intracity? (in KMs)
+ */
+const MAX_CITY_DISTANCE = 1000 * config.get("MapUtils.MaximumCityDistance");
+/**
+ * Routes longer than `MAX_DISTANCE` will be discarded. As it takes to much requests
+ * to third party APIs. Instead requesting portions of the route when needed is enforced
+ * to end users.
+ */
+const MAX_DISTANCE = 1000 * config.get("MapUtils.MaximumRouteDistance");
+
+logger.info(
+  `DISTANCE_THRESHOLD_INTRACITY is set to ${DISTANCE_THRESHOLD_INTRACITY} meters`
+);
+logger.info(
+  `DISTANCE_THRESHOLD_INTERCITY is set to ${DISTANCE_THRESHOLD_INTERCITY} meters `
+);
+logger.info(`MAX_CITY_DISTANCE is set to ${MAX_CITY_DISTANCE} meters`);
+logger.info(`MAX_DISTANCE is set to ${MAX_DISTANCE} meters`);
 
 /**
  * A Joi Validation Schema to be used againts TomTom's Flow API Requests.
@@ -96,7 +127,7 @@ export default class AvlTrafficLayerController {
       repeat: req.query.repeat
     };
     /**
-     * Validate the inpute data
+     * Validate the input data
      */
     Joi.validate(
       validateQuery,
@@ -165,6 +196,7 @@ export default class AvlTrafficLayerController {
    * @summary Given a coordinate pair, makes a request to the TomTom Route API
    * via TomTomService (getRoute), with the following route points, it makes another
    * request to the HERE Route Figure API to get an image of the route
+   * /api/v1/avl/route/figure
    * @param {Express.Request} req
    * @param {Express.Response} res
    * @param {Express.next} next
@@ -199,6 +231,7 @@ export default class AvlTrafficLayerController {
       long: tmpCoordList[1]
     };
 
+    // Validate incoming data
     SourceDestParamValidator.validate(
       validateQuery,
       async (validError, value) => {
@@ -218,13 +251,20 @@ export default class AvlTrafficLayerController {
             value.destination
           );
 
+          const distanceThresholdRoute = MapUtils.getDistanceThreshold(
+            value.source,
+            value.destination
+          );
           /**
            * Reduce route coordinates if the client wants to render markers in order
            * not to run out of markers.
            */
           let filteredCoordinates;
           if (req.query.useMarker)
-            filteredCoordinates = reduceRoutePoints(routeResult.points);
+            filteredCoordinates = MapUtils.diluteRoutePoints(
+              routeResult,
+              distanceThresholdRoute
+            );
           else filteredCoordinates = routeResult.points;
           /**
            * Pack the returned list of points(or route) into RouteList object
@@ -310,6 +350,7 @@ export default class AvlTrafficLayerController {
       long: tmpCoordList[1]
     };
 
+    // Validate incoming data
     SourceDestParamValidator.validate(
       validateQuery,
       async (validError, value) => {
@@ -322,38 +363,37 @@ export default class AvlTrafficLayerController {
           return;
         }
 
+        /**  Check if distance is not too large. Larger distances tend to produce more points which in turn
+         *   results in many requests to TomTom Flow endpoint most of which will fail.
+         */
+        const distance = MapUtils.getDistance(value.source, value.destination);
+        logger.debug(`Distance is calculated: ${distance}`);
+        if (distance >= MAX_DISTANCE) {
+          res
+            .status(400)
+            .send(
+              "Distance is too large. Try requesting smaller portions of the route when neeeded."
+            );
+          return;
+        }
+
+        const distanceThresholdRoute = MapUtils.getDistanceThreshold(
+          value.source,
+          value.destination
+        );
+
         // Get a route between the source and destination coordinates
         try {
           const routeResult = await TomTomAPIWrapper.getRoute(
             value.source,
             value.destination
           );
-          let pointFlowPromList = [];
-          let lastCoordinate = {
-            lat: 0,
-            long: 0
-          };
-          /**
-           * Scan through all of the points and make sure that consecutive coordinates are at least
-           * `DISTANCE_THRESHOLD` meters far away from each other. If this condition fails to hold
-           * for two consecutive coordinates, then don't update the lastCoordinate.
-           *
-           */
-          routeResult.points.forEach(point => {
-            logger.debug(`Scanning the coord: ${JSON.stringify(point)}`);
-            const distance = MapUtils.getDistance(lastCoordinate, point);
-            logger.debug(
-              `Distance calculated between ${JSON.stringify(lastCoordinate)}` +
-                ` - ${JSON.stringify(point)}: ${distance}`
-            );
-            if (distance < DISTANCE_THRESHOLD) {
-              logger.debug("Distance is less than the threshold, skipping");
-              return;
-            }
-            lastCoordinate = point;
-            let prom = TomTomAPIWrapper.getFlowInfoCoord(point);
-            pointFlowPromList.push(prom);
-          });
+
+          const pointFlowPromList = await MapUtils.diluteRoutePointsWorker(
+            routeResult,
+            TomTomAPIWrapper.getFlowInfoCoord,
+            distanceThresholdRoute
+          );
           const promiseAlmost = getPromiseAlmost(pointFlowPromList);
           let responseData = { coords: [] };
           promiseAlmost
@@ -378,6 +418,7 @@ export default class AvlTrafficLayerController {
                   frc: flowInfo.frc
                 });
               });
+              logger.info(`Total number of request: ${flowInfoList.length}`);
               res.json(responseData);
             })
             .catch(error => {
@@ -393,7 +434,7 @@ export default class AvlTrafficLayerController {
             `An error occured inside -apiGetRouteTrafficFlow- ${error}` +
               `, stack: ${error.stack}`
           );
-          res.send(500).send("Internal error occured.");
+          res.status(500).send("Internal error occured.");
           return;
         }
       }

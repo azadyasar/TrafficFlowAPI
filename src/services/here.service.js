@@ -73,14 +73,20 @@ export default class HereAPIWrapper {
         HereUtils.getSourceDestinationCoords(routeCoords, "string")
       )}`
     );
-    const txt =
-      "r=" +
-      HereUtils.convertCoordsToString(routeCoords, true) +
-      "&m=" +
-      HereUtils.getSourceDestinationCoords(routeCoords, "string") +
-      "&lc=" +
-      lineColor +
-      "&h=512&w=512";
+    let txt;
+    if (options.useMarker) {
+      txt = "m=" + HereUtils.convertCoordsToString(routeCoords) + "&mlbl=0";
+    } else {
+      txt =
+        "r=" +
+        HereUtils.convertCoordsToString(routeCoords) +
+        "&m=" +
+        HereUtils.getSourceDestinationCoords(routeCoords, "string") +
+        "&lc=" +
+        lineColor +
+        "&h=512&w=512" +
+        "&mlbl=0";
+    }
     /*  r: options.useMarker
               ? ""
               : HereUtils.convertCoordsToString(routeCoords),

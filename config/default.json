@@ -10,6 +10,13 @@
     "exceptionLogPath": "logs/exception.log"
   },
 
+  "MapUtils": {
+    "MaximumRouteDistance": 1000,
+    "MaximumCityDistance": 50,
+    "DistanceThresholdIntraCity": 500,
+    "DistanceThresholdInterCity": 2000
+  },
+
   "TomTom": {
     "Traffic": {
       "baseURL": "api.tomtom.com",

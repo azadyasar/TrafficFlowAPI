@@ -1,6 +1,6 @@
 import axios from "axios";
 import config from "config";
-import MapUtils from "../utils/map";
+import MapUtils from "../utils/map.utils";
 
 import logger from "../utils/logger";
 
