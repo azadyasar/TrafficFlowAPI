@@ -1,9 +1,11 @@
 import axios from "axios";
 import config from "config";
 import MapUtils from "../utils/map.utils";
-
 import logger from "../utils/logger";
 
+/**
+ * TomTom related default parameters
+ */
 let tomtomTrafficAPIVersionNumber = config.get("TomTom.Traffic.versionNumber");
 let tomtomTrafficZoomLevel = config.get("TomTom.Traffic.DefaultParams.zoom");
 let tomtomTrafficReturnFromat = config.get(
@@ -20,6 +22,9 @@ let tomtomMapLanguage = config.get("TomTom.Map.DefaultParams.language");
 let tomtomMapZoomLevel = config.get("TomTom.Map.DefaultParams.zoom");
 let tomtomAppKey;
 
+/**
+ * Retrieve TomTom credentials
+ */
 if (config.has("TOMTOM_API_KEY"))
   tomtomAppKey = config.get("TOMTOM_API_KEY").toString();
 else if (process.env.TOMTOM_API_KEY) tomtomAppKey = process.env.TOMTOM_API_KEY;
@@ -52,7 +57,8 @@ logger.info("tomtomRouteBaseURL has been set up: " + tomtomRouteBaseURL);
 
 export default class TomTomAPIWrapper {
   /**
-   * Given a `coord`, calls TomTom API and returns `TomTomFlowSegmentData`
+   * Given a `coord`, calls TomTom API for the flow information of the given coordinate
+   * and then returns a `TomTomFlowSegmentData` object containing the flow information
    * @param {Coordinate} coord - Must be a `Coordinate` containing `lat` and `long`. Coordinates are expected as parameters during a request.
    * @returns {Promise<TomTomFlowSegmentData>} Returns a promise of the flow segment data
    */
@@ -64,6 +70,9 @@ export default class TomTomAPIWrapper {
         JSON.stringify(coord)
     );
     return new Promise((resolve, reject) => {
+      /**
+       * Make a request to TomTom API with the given coordinate
+       */
       axios
         .get(tomtomTrafficBaseURL, {
           params: {
@@ -73,9 +82,12 @@ export default class TomTomAPIWrapper {
         })
         .then(response => {
           logger.info("GOT Response -getFlowInfoCoord-: " + response);
+          /**
+           * Reject if the response from TomTom is not OK
+           */
           if (response.status !== 200) {
             logger.warn(
-              "Response status is getFlowInfoCoord " + response.status
+              "[getFlowInfoCoord] Response status is " + response.status
             );
             /**
              * Should we resolve with null, when we have a response wity non-200 response code?
@@ -87,6 +99,9 @@ export default class TomTomAPIWrapper {
               statusCode: response.status
             });
           }
+          /**
+           * Parse and transfer the useful information from the returned information and return it
+           */
           let tomtomFlowSegmentData = TomTomUtils.storeFlowSegmentData(
             response.data
           );
@@ -117,22 +132,28 @@ export default class TomTomAPIWrapper {
   }
 
   /**
-   *  Given a `Coordinate` and an option `zoom` arguments, returns the corresponding tile image stream.
+   *  Given a `Coordinate` and an options {`zoom`} arguments, returns the corresponding tile image stream.
    * @param {Coordinate} coord - Must be a pair of numbers containing `lat` and `long`. They will be converted to a zoom, xtile, yile triplet.
    * @param {TomTomMapTileRequestOptions} options - Options to be used before and during making a request to TomTom Map Tile API
    * @returns {Promise<axios.response.data>} A data stream containing the image of the tile at a given zoom. Should be used to pipe to another stream e.g., writeStream, or express response stream
    */
   static async getTileImage(coord, options = { zoom: tomtomMapZoomLevel }) {
     /**
-     * `undefined` `zoom` might come from a client's request. It's not checked in the route handler.
+     * `undefined` `zoom` might come from the client's request. It's not checked in the route handler.
      */
     if (options.zoom === undefined || options.zoom === null)
       options.zoom = tomtomMapZoomLevel;
+
+    /**
+     * Get Tile of the given coordinate at a specific zoom level.
+     * Then construct the endpoint URL with the returned tile.
+     */
     const tile = MapUtils.convertCoordToTile(coord, options.zoom);
     const targetTileURL = tomtomMapBaseURL
       .replace("XTILE", tile.xtile)
       .replace("YTILE", tile.ytile)
       .replace("zoom", tile.zoom);
+
     logger.info(
       `Executing GET Request from getTileImage to ${targetTileURL}` +
         ` with ${JSON.stringify(tile)}`
@@ -185,7 +206,7 @@ export default class TomTomAPIWrapper {
   }
 
   /**
-   * Given a start and end coordinate, calculates the route in between them
+   * Given a start and end coordinate, calculates the route in between
    * @param {Coordinate} sourceCoord - Starting point
    * @param {Coordinate} destCoord - Destination point
    * @returns {Promise<TomTomRoute>} - A list of coordinates and a summary
@@ -193,7 +214,8 @@ export default class TomTomAPIWrapper {
    */
   static async getRoute(sourceCoord, destCoord) {
     /**
-     * Construct endpoint URL for calculateRoute
+     * Construct the URL for calculateRoute endpoint
+     * calculateRoute/souce.lat,source.long:dest.lat,dest.long/json
      */
     const coordParam =
       sourceCoord.lat +
@@ -217,12 +239,27 @@ export default class TomTomAPIWrapper {
         })
         .then(response => {
           logger.info(`Received response TomTomService/getRoute`);
-          // TomTom returns points with latitude, longitude format.
-          let coordinates = response.data.routes[0].legs[0].points.map(
-            coord => {
-              return { lat: coord.latitude, long: coord.longitude };
-            }
-          );
+          /**
+           * Parse incoming JSON data.
+           * Note that the returned value might contain empty arrays
+           * e.g., `routes`, `legs`.
+           */
+          const routes = (response.data || {}).routes || [];
+          if (routes.length === 0)
+            reject(new Error("response.data.routes has length 0"));
+
+          const legs = routes[0].legs;
+          if (legs.length === 0)
+            reject(new Error("response.data.routes.legs has length 0"));
+
+          const points = legs[0].points;
+          /**
+           * TomTom returns points with latitude and longitute properties.
+           * Map them to our internal presentation format (lat, long).
+           */
+          let coordinates = points.map(coord => {
+            return { lat: coord.latitude, long: coord.longitude };
+          });
           resolve({
             summary: response.data.routes[0].legs[0].summary,
             points: coordinates

@@ -1,36 +1,15 @@
 import TomTomAPIWrapper from "../../services/tomtom.service";
-import Joi from "joi";
 import logger from "../../utils/logger";
+import Validators from "../middleware/validator.mw";
+import config from "config";
 
-/**
- * A Joi Validation Schema to be used againts TomTom's Flow API Requests.
- * - `lat`: latitude is required
- * - `long`: longitute is required
- * - `zoom`: zoom is optional. must be in the range of [0, 22]
- */
-const TomTomFlowJoiSchema = {
-  lat: Joi.number().required(),
-  long: Joi.number().required(),
-  zoom: Joi.number()
-    .min(0)
-    .max(22)
-};
-
-const TomTomRouteParamValidator = Joi.object({
-  source: Joi.object({
-    lat: Joi.number().required(),
-    long: Joi.number().required()
-  }).required(),
-  destination: Joi.object({
-    lat: Joi.number().required(),
-    long: Joi.number().required()
-  }).required()
-});
+const INTERNAL_ERROR_MSG = config.get("Mlg.Warnings.InternalError");
+const MALFORMED_PARAM_MSG = config.get("Mlg.Warnings.MalformedParameters");
 
 export default class TomTomAPIController {
   /**
    * /api/v1/tomtom/flow?coord=48.3232,2.3242
-   * Given a `coord`, responses with the flow data of that coordinate
+   * Given a `coord`, returns the flow data of that coordinate
    * @param {Express.Request} req
    * @param {Express.Response} res
    * @param {Express.next} next
@@ -39,11 +18,11 @@ export default class TomTomAPIController {
     logger.info(
       `apiGetTrafficFlowData got request: ${req.path} params: ${JSON.stringify(
         req.params
-      )}`
+      )}, query: ${JSON.stringify(req.query)}`
     );
     // 400 if the client does not provide a coordinate
     if (!req.query.hasOwnProperty("coord")) {
-      res.status(400).send("Provide a coordinate as (coord)");
+      res.status(400).send("-coord- query parameter is missing.");
       return;
     }
     // Parse input coordinate into lat, long of the reqParams.
@@ -54,32 +33,36 @@ export default class TomTomAPIController {
       zoom: req.query.zoom
     };
     /**
-     * Validate the input data.
+     * Validate incoming request parameters.
      */
-    Joi.validate(validateQuery, TomTomFlowJoiSchema, (err, value) => {
-      if (err) {
-        logger.error(
-          `Validation failed inside -apiGetTrafficFlowData-: ${err}`
-        );
-        res.send("-coord- parameter is malformed");
-        return;
-      }
-      TomTomAPIWrapper.getFlowInfoCoord({ lat: value.lat, long: value.long })
-        .then(response => {
-          res.json(response);
-        })
-        .catch(error => {
+    Validators.TomTomFlowValidatior.validate(
+      validateQuery,
+      (validError, value) => {
+        if (validError) {
           logger.error(
-            "Error occured during TomTom API call " +
-              error.error +
-              `, statusCode: ${error.statusCode} stack: ${error.stack}`
+            `Validation failed inside -apiGetTrafficFlowData-: ${validError}`
           );
-          res.status(500).send({
-            descr: "Intermediate node error check your input parameters",
-            statusCode: error.statusCode
+          res.send(MALFORMED_PARAM_MSG);
+          return;
+        }
+        /**
+         * Make a request to the TomTom API
+         * Then redirect response to the client.
+         */
+        TomTomAPIWrapper.getFlowInfoCoord({ lat: value.lat, long: value.long })
+          .then(response => {
+            res.json(response);
+          })
+          .catch(error => {
+            logger.error(
+              "Error occured during TomTom API call " +
+                error.error +
+                `, statusCode: ${error.statusCode} stack: ${error.stack}`
+            );
+            res.status(500).send(INTERNAL_ERROR_MSG);
           });
-        });
-    });
+      }
+    );
   }
 
   /**
@@ -96,7 +79,7 @@ export default class TomTomAPIController {
                 query: ${JSON.stringify(req.query)}`);
     // 400 if the client does not provide a coordinate
     if (!req.query.hasOwnProperty("coord")) {
-      res.status(400).send("You must provide a coordinate");
+      res.status(400).send("-coord- param is missing.");
       return;
     }
     // Parse input coordinate into lat, long of the reqParams.
@@ -107,35 +90,40 @@ export default class TomTomAPIController {
       zoom: req.query.zoom
     };
     /**
-     * Validate the input data.
+     * Validate incoming request parameters.
      */
-    Joi.validate(validateQuery, TomTomFlowJoiSchema, (error, value) => {
-      if (error) {
-        logger.error(`Validation failed inside -apiGetMapTileImage-: ${err}`);
-        res.send("Query parameters are malformed");
-        return;
-      }
-      TomTomAPIWrapper.getTileImage(
-        { lat: value.lat, long: value.long },
-        { zoom: value.zoom }
-      )
-        .then(response => {
-          res.type("png");
-          // response.pipe(require("fs").createWriteStream("./test.png"));
-          response.pipe(res);
-        })
-        .catch(error => {
+    Validators.TomTomFlowValidatior.validate(
+      validateQuery,
+      (validError, value) => {
+        if (validError) {
           logger.error(
-            "Error occured during TomTom API call " +
-              error.error +
-              `, statusCode: ${error.statusCode} stack: ${error.stack}`
+            `Validation failed inside -apiGetMapTileImage-: ${validError}`
           );
-          res.status(500).send({
-            descr: "Intermediate node error check your input parameters",
-            statusCode: error.statusCode
+          res.send(MALFORMED_PARAM_MSG);
+          return;
+        }
+        /**
+         * Make a request to the TomTom API
+         * Then pipe the incoming image stream to the client
+         */
+        TomTomAPIWrapper.getTileImage(
+          { lat: value.lat, long: value.long },
+          { zoom: value.zoom }
+        )
+          .then(response => {
+            res.type("png");
+            response.pipe(res);
+          })
+          .catch(error => {
+            logger.error(
+              "Error occured during TomTom API call " +
+                error.error +
+                `, statusCode: ${error.statusCode} stack: ${error.stack}`
+            );
+            res.status(500).send(INTERNAL_ERROR_MSG);
           });
-        });
-    });
+      }
+    );
   }
 
   /**
@@ -171,27 +159,30 @@ export default class TomTomAPIController {
       long: tmpCoordList[1]
     };
 
-    TomTomRouteParamValidator.validate(validateQuery, (validError, value) => {
-      if (validError) {
-        logger.error(
-          `Validation failed inside -apiGetRoute-: ${validError}` +
-            `, stack: ${validError.stack}`
-        );
-        res.status(403).send("Malformed query. Fix your parameters");
-        return;
-      }
-      TomTomAPIWrapper.getRoute(value.source, value.destination)
-        .then(result => {
-          logger.info(`Got result from the TomTomAPIWrapper: ${result}`);
-          res.send(result);
-        })
-        .catch(reqError => {
+    Validators.SourceDestParamValidator.validate(
+      validateQuery,
+      (validError, value) => {
+        if (validError) {
           logger.error(
-            `getRoute got error ${reqError}, stack: ${reqError.stack}`
+            `Validation failed inside -apiGetRoute-: ${validError}` +
+              `, stack: ${validError.stack}`
           );
-          res.status(400).send("Check your parameters");
-        });
-    });
+          res.status(403).send(MALFORMED_PARAM_MSG);
+          return;
+        }
+        TomTomAPIWrapper.getRoute(value.source, value.destination)
+          .then(result => {
+            logger.info(`Got result from the TomTomAPIWrapper: ${result}`);
+            res.send(result);
+          })
+          .catch(reqError => {
+            logger.error(
+              `getRoute got error ${reqError}, stack: ${reqError.stack}`
+            );
+            res.status(500).send(INTERNAL_ERROR_MSG);
+          });
+      }
+    );
   }
 }
 

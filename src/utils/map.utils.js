@@ -68,7 +68,7 @@ export default class MapUtils {
    * that the given coordinate lies in
    * @param {Coordinate} coord - A `lat` - `long` pair of a coordinate that will be converted to a xtile, ytile at a given zoom.
    * @param {number} zoom - At which zoom level should the conversion be done. Should be in the range of `[0, 22]`
-   * @returns {Tile}
+   * @returns {Tile} result
    */
   static convertCoordToTile(coord, zoom) {
     logger.debug(`converCoordToTile is called: coord: ${coord}, zoom: ${zoom}`);
