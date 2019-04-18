@@ -281,24 +281,22 @@ export default class AvlTrafficLayerController {
   }
 
   /**
-   * @todo Filter out the coordinates of a route, remove the ones that are too close
-   * to each other. Specify a parameter that the end user can define (in a predefined
-   * range) then make sure that the consecutive coordinates have at least the given
-   * distance.
-   */
-  /**
    * /api/v1/avl/route/flow
-   * @summary Given a source and a destination coordinate, returns a list of coordinates
+   * /api/v1/avl/route/flow/figure
+   * @summary Given a source and a destination coordinate, calculates a list of coordinates
    * that defines a route between them. Each coordinate also includes information
    * such as freeFlowSpeed, currentFlowSpeed, etc.
-   * It first makes a request to the TomTom calcRoute endpoint, then uses
+   * It first makes a request to the TomTom calcRoute endpoint, then uses the returned
+   * coordinates to make another request to retrieve the traffic information.
+   * Note that this is the first request handler for Route Flow requests, if this handler
+   * ends succesfully then the latter handlers will be called.
    * @param {Express.Request} req
    * @param {Express.Response} res
    * @param {Express.next} next
    */
-  static async apiGetRouteTrafficFlow(req, res, next) {
+  static async apiCalculateRouteTrafficFlow(req, res, next) {
     logger.info(
-      `apiGetRouteTrafficFlow got request: ${req.path}` +
+      `apiCalculateRouteTrafficFlow got request: ${req.path}` +
         `, params: ${JSON.stringify(req.params)}, query: ${JSON.stringify(
           req.query
         )}`
@@ -353,68 +351,30 @@ export default class AvlTrafficLayerController {
           return;
         }
 
-        /**
-         * Get the distance threshold value to be used to separate consecutive coordinates
-         */
-        const distanceThresholdRoute = MapUtils.getDistanceThreshold(
-          value.source,
-          value.destination
-        );
-
         // Get a route between the source and destination coordinates
         try {
           const routeResult = await TomTomAPIWrapper.getRoute(
             value.source,
             value.destination
           );
+
           // Dilute the coordinates by filtering out close points
           const pointFlowPromList = await MapUtils.diluteRoutePointsWorker(
             routeResult,
-            TomTomAPIWrapper.getFlowInfoCoord,
-            distanceThresholdRoute
+            TomTomAPIWrapper.getFlowInfoCoord
           );
-          /* Transform Promise.all to Promise.almost to make the Promise list robust to errors
+
+          /**
+           * Transform Promise.all to Promise.almost to make the Promise list robust to errors
            * A few request failures out of tens of requests are negligible
            */
-          const promiseAlmost = getPromiseAlmost(pointFlowPromList);
-          let responseData = { coords: [] };
-          promiseAlmost
-            .then(flowInfoList => {
-              flowInfoList.forEach(flowInfo => {
-                if (flowInfo.failure) {
-                  logger.warn(`Something went wrong ${responseData}`);
-                  return;
-                }
-                // Check if flowInfo has information
-                if (!flowInfo.coordinates) {
-                  logger.warn(`${flowInfo} doesn't have any info`);
-                  return;
-                }
-                /**
-                 *  Construct responseData and push. flowInfo.coordinates[0] is the first of the
-                 *  points list as it is the requested coordinate.
-                 */
-                responseData.coords.push({
-                  coord: flowInfo.coordinates[0],
-                  freeFlowSpeed: flowInfo.freeFlowSpeed,
-                  currentSpeed: flowInfo.currentSpeed,
-                  currentTravelTime: flowInfo.currentTravelTime,
-                  freeFlowTravelTime: flowInfo.freeFlowTravelTime,
-                  confidence: flowInfo.confidence,
-                  frc: flowInfo.frc
-                });
-              });
-              logger.info(`Total number of request: ${flowInfoList.length}`);
-              res.json(responseData);
-            })
-            .catch(error => {
-              logger.error(
-                `An error occured during multiple flow requests to TomTom ${error}` +
-                  `, stack: ${error.stack}`
-              );
-              res.status(500).send("Internal error occured.");
-              return;
-            });
+          req.promiseAlmost = getPromiseAlmost(pointFlowPromList);
+          /**
+           * Call the next request handler funtion
+           * - `apiGetRouteTrafficFlow`
+           * - `apiGetRouteTrafficFigure`
+           */
+          next();
         } catch (error) {
           logger.error(
             `An error occured inside -apiGetRouteTrafficFlow- ${error}` +
@@ -425,6 +385,87 @@ export default class AvlTrafficLayerController {
         }
       }
     );
+  }
+
+  /**
+   * /api/v1/avl/route/flow
+   * @summary This request handler function is preceded by apiCalculateRouteTrafficFlow
+   * so when called, it already has the `promiseList` of the flow information requests
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  static async apiGetRouteTrafficFlow(req, res, next) {
+    logger.info(
+      `apiGetRouteTrafficFlow got request: ${req.path}` +
+        `, params: ${JSON.stringify(req.params)}, query: ${JSON.stringify(
+          req.query
+        )}`
+    );
+
+    let responseData = { coords: [] };
+    req.promiseAlmost
+      .then(flowInfoList => {
+        flowInfoList.forEach(flowInfo => {
+          if (flowInfo.failure) {
+            logger.warn(`flowInfo is defected ${responseData}`);
+            return;
+          }
+          // Check if flowInfo has information
+          if (!flowInfo.coordinates) {
+            logger.warn(`${flowInfo} doesn't have any flow info`);
+            return;
+          }
+          /**
+           *  Construct responseData and push. flowInfo.coordinates[0] is the first of the
+           *  points list as it is the requested coordinate.
+           */
+          responseData.coords.push({
+            coord: flowInfo.coordinates[0],
+            freeFlowSpeed: flowInfo.freeFlowSpeed,
+            currentSpeed: flowInfo.currentSpeed,
+            currentTravelTime: flowInfo.currentTravelTime,
+            freeFlowTravelTime: flowInfo.freeFlowTravelTime,
+            confidence: flowInfo.confidence,
+            frc: flowInfo.frc
+          });
+        });
+        logger.info(`Total number of request: ${flowInfoList.length}`);
+        res.json(responseData);
+      })
+      .catch(error => {
+        logger.error(
+          `An error occured during multiple flow requests to TomTom ${error}` +
+            `, stack: ${error.stack}`
+        );
+        res.status(500).send(INTERNAL_ERROR_MSG);
+        return;
+      });
+  }
+
+  /**
+   * /api/v1/route/flow/figure
+   * @summary Given a source and destination coordinate pair, calculates an optimal route
+   * between them, retrieves the flow information of that route and then visualizes the
+   * flow information via markers.
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  static async apiGetRouteTrafficFigure(req, res, next) {
+    logger.info(
+      `apigetRouteTrafficFigure got request: ${req.path}` +
+        `, params: ${JSON.stringify(req.params)}, query: ${JSON.stringify(
+          req.query
+        )}`
+    );
+
+    if (
+      !req.query.hasOwnProperty("source") ||
+      !req.query.hasOwnProperty("dest")
+    ) {
+      res.status(400).send("-source- and -dest- query parameters are missing");
+    }
   }
 }
 

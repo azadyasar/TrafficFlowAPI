@@ -134,8 +134,13 @@ export default class MapUtils {
   static async diluteRoutePointsWorker(
     routeResult,
     callForEachPointFunc,
-    distance_threshold = 250
+    distance_threshold
   ) {
+    if (!distance_threshold)
+      distance_threshold = this.getDistanceThreshold(
+        routeResult.points[0],
+        routeResult.points[routeResult.points.length - 1]
+      );
     let pointFlowPromList = [];
     let lastCoordinate = {
       lat: 0,
@@ -222,6 +227,19 @@ export default class MapUtils {
     else distanceThresholdRoute = DISTANCE_THRESHOLD_INTRACITY;
     return distanceThresholdRoute;
   }
+
+  /**
+   * @summary Given a flow segment data, calculates the traffic jam of the given point
+   * as `(freeFlowSpeed - currentFlowSpeed) / freeFlowSpeed`
+   * @param {TomTomFlowSegmentData} flowInfo - Flow information of a coordinate
+   * @returns {number} Jam factor in the range of [0, 10]
+   */
+  static getTrafficJam(flowInfo) {
+    return Math.round(
+      (10 * (flowInfo.freeFlowSpeed - flowInfo.currentSpeed)) /
+        flowInfo.freeFlowSpeed
+    );
+  }
 }
 
 /**
@@ -243,4 +261,18 @@ export default class MapUtils {
  * @typedef TomTomRoute
  * @property {string} summary
  * @property {Coordinate[]} points
+ */
+
+/**
+ * Represents the Flow Information object of a given coordinate
+ * @typedef TomTomFlowSegmentData
+ * @property {string} frc - functional road class
+ * @property {string} roadDescription - The description of the road, depends on the `frc`
+ * @property {number} currentSpeed - Current speed of the road
+ * @property {number} freeFlowSpeed - Free flow speed of the road
+ * @property {number} currentTravelTime - Current travel time of the road
+ * @property {number} freeFlowTravelTime - Free flow travel time of the road
+ * @property {number} confidence - Confidence of the speed and time information
+ * @property {number} nbrOfCoords - Length of the `coordinates` list
+ * @property {Coordinate[]} coordinates - Coordinate array, a line through the direction of the road, starting from the given coordinate
  */
