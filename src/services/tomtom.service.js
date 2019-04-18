@@ -6,20 +6,21 @@ import logger from "../utils/logger";
 /**
  * TomTom related default parameters
  */
-let tomtomTrafficAPIVersionNumber = config.get("TomTom.Traffic.versionNumber");
-let tomtomTrafficZoomLevel = config.get("TomTom.Traffic.DefaultParams.zoom");
-let tomtomTrafficReturnFromat = config.get(
+const tomtomTrafficAPIVersionNumber = config.get(
+  "TomTom.Traffic.versionNumber"
+);
+const tomtomTrafficZoomLevel = config.get("TomTom.Traffic.DefaultParams.zoom");
+const tomtomTrafficReturnFromat = config.get(
   "TomTom.Traffic.DefaultParams.format"
 );
-let tomtomTrafficStyle = config.get("TomTom.Traffic.DefaultParams.style");
-let tomtomMapAPIVersionNumber = config.get("TomTom.Map.versionNumber");
-let tomtomMapFormat = config.get("TomTom.Map.DefaultParams.format");
-let tomtomMapStyle = config.get("TomTom.Map.DefaultParams.style");
-let tomtomMapLayer = config.get("TomTom.Map.DefaultParams.layer");
-let tomtomMapTileSize = config.get("TomTom.Map.DefaultParams.tileSize");
-let tomtomMapView = config.get("TomTom.Map.DefaultParams.view");
-let tomtomMapLanguage = config.get("TomTom.Map.DefaultParams.language");
-let tomtomMapZoomLevel = config.get("TomTom.Map.DefaultParams.zoom");
+const tomtomTrafficStyle = config.get("TomTom.Traffic.DefaultParams.style");
+const tomtomMapAPIVersionNumber = config.get("TomTom.Map.versionNumber");
+const tomtomMapFormat = config.get("TomTom.Map.DefaultParams.format");
+const tomtomMapStyle = config.get("TomTom.Map.DefaultParams.style");
+const tomtomMapLayer = config.get("TomTom.Map.DefaultParams.layer");
+const tomtomMapTileSize = config.get("TomTom.Map.DefaultParams.tileSize");
+const tomtomMapView = config.get("TomTom.Map.DefaultParams.view");
+const tomtomMapLanguage = config.get("TomTom.Map.DefaultParams.language");
 let tomtomAppKey;
 
 /**
@@ -137,13 +138,7 @@ export default class TomTomAPIWrapper {
    * @param {TomTomMapTileRequestOptions} options - Options to be used before and during making a request to TomTom Map Tile API
    * @returns {Promise<axios.response.data>} A data stream containing the image of the tile at a given zoom. Should be used to pipe to another stream e.g., writeStream, or express response stream
    */
-  static async getTileImage(coord, options = { zoom: tomtomMapZoomLevel }) {
-    /**
-     * `undefined` `zoom` might come from the client's request. It's not checked in the route handler.
-     */
-    if (options.zoom === undefined || options.zoom === null)
-      options.zoom = tomtomMapZoomLevel;
-
+  static async getTileImage(coord, options = {}) {
     /**
      * Get Tile of the given coordinate at a specific zoom level.
      * Then construct the endpoint URL with the returned tile.

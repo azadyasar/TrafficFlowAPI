@@ -35,7 +35,7 @@ export default class HereUtils {
 
   /**
    * Given an array of `Coordinate` objects, converts them to `lat1,long1,lat2,...` string.
-   * So that it can be used as a query param during requets to HERE API
+   * So that it can be used as a query param during requests to HERE API
    * @param {Coordinate[]} coords
    * @returns {string} - A string of coordinates joined as `lat1,long1,lat2,long2,...` to be used as a query parameter
    */
@@ -150,9 +150,10 @@ export default class HereUtils {
   /**
    *
    * @param {RouteList} routeList - A list of routes
+   * @param {boolean} randomColors - Use different colors for each route.
    * @returns {string} A string containing query parameters to be used when making a request to HERE Route Figure API for multiple routes.
    */
-  static getQueryParamsForMultipleRoute(routeList) {
+  static getQueryParamsForMultipleRoute(routeList, randomColors = true) {
     /**
      * Check if `routeList`, `routeList.routes` are defined and `routeList.routes` has length GT 0
      */
@@ -160,7 +161,7 @@ export default class HereUtils {
       throw new Error("routeList argument is not processable");
 
     let routeIdx = 0;
-    let queryParamStr = "?";
+    let queryParamStr = "";
     routeList.routes.forEach(route => {
       /**
        * Check if the `coords` array is filled.
@@ -175,14 +176,20 @@ export default class HereUtils {
       queryParamStr = queryParamStr.concat(
         this.convertCoordsToString(route.coords)
       );
-      if (route.lineColor)
-        queryParamStr = queryParamStr.concat(
-          `&lc${routeIdx}=${route.lineColor}`
-        );
-      else
+      /**
+       * Assign the lc (`lineColor`) of the query. In case the lineColor is not specified in the
+       * `route` object, randomly pick one to make the different routes on the figure distinguishable.
+       */
+
+      if (randomColors || !route.lineColor)
         queryParamStr = queryParamStr.concat(
           `&lc${routeIdx}=${this.getRandomColor()}`
         );
+      else
+        queryParamStr = queryParamStr.concat(
+          `&lc${routeIdx}=${route.lineColor}`
+        );
+
       if (route.lineWidth)
         queryParamStr = queryParamStr.concat(
           `&lw${routeIdx}=${route.lineWidth}`

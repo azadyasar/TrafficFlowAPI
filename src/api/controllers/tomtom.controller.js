@@ -29,13 +29,12 @@ export default class TomTomAPIController {
     const coordList = req.query.coord.split(",");
     let validateQuery = {
       lat: coordList[0],
-      long: coordList[1],
-      zoom: req.query.zoom
+      long: coordList[1]
     };
     /**
      * Validate incoming request parameters.
      */
-    Validators.TomTomFlowValidatior.validate(
+    Validators.TomTomFlowValidator.validate(
       validateQuery,
       (validError, value) => {
         if (validError) {
@@ -92,7 +91,7 @@ export default class TomTomAPIController {
     /**
      * Validate incoming request parameters.
      */
-    Validators.TomTomFlowValidatior.validate(
+    Validators.TomTomFlowValidator.validate(
       validateQuery,
       (validError, value) => {
         if (validError) {

@@ -1,19 +1,10 @@
 import HereAPIWrapper from "../../services/here.service";
-import Joi from "joi";
 import logger from "../../utils/logger";
 import config from "config";
+import tomtom from "./tomtom.controller";
 
-let hereRouteRegExp = config.get("Here.RouteDisplay.ParamsRegExp.route");
-let hereMarkerRegExp = config.get("Here.RouteDisplay.ParamsRegExp.marker");
-let hereLineColorRegExp = config.get(
-  "Here.RouteDisplay.ParamsRegExp.lineColor"
-);
-let hereLineWidthRegExp = config.get(
-  "Here.RouteDisplay.ParamsRegExp.lineWidth"
-);
-let hereMarkerFillColorRegExp = config.get(
-  "Here.RouteDisplay.ParamsRegExp.markerFillColor"
-);
+const INTERNAL_ERROR_MSG = config.get("Mlg.Warnings.InternalError");
+const MALFORMED_PARAM_MSG = config.get("Mlg.Warnings.MalformedParameters");
 
 export default class HereAPIContoller {
   /**
@@ -32,12 +23,12 @@ export default class HereAPIContoller {
      * Validation, incoming data conversion
      */
     if (!req.query.hasOwnProperty("route")) {
-      res.status(403).send("You must provide a list of coordinates as -route-");
+      res.status(400).send("You must provide a list of coordinates as -route-");
       return;
     }
 
     const coordList = req.query.route;
-    HereAPIWrapper.getRouteFigure(coordList)
+    HereAPIWrapper.getSingleRouteFigure({ coords: coordList })
       .then(response => {
         res.type("png");
         response.pipe(res);
@@ -47,9 +38,7 @@ export default class HereAPIContoller {
           `Error occured during HERE API call: ${error}` +
             `,statusCode: ${error.statusCode} stack: ${error.stack}`
         );
-        res
-          .status(500)
-          .send(`Intermediate node error. Check your input parameters`);
+        res.status(500).send(INTERNAL_ERROR_MSG);
       });
   }
 }

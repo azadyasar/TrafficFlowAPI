@@ -71,6 +71,12 @@ export default class MapUtils {
    * @returns {Tile} result
    */
   static convertCoordToTile(coord, zoom) {
+    if (!coord || !zoom)
+      throw new Error(
+        "Unexpected arguments to [convertCoordToTile]: " +
+          `coord: ${JSON.stringify(coord)}, zoom: ${zoom}`
+      );
+
     logger.debug(`converCoordToTile is called: coord: ${coord}, zoom: ${zoom}`);
     let result = {};
     const n = Math.pow(2, zoom);
@@ -157,8 +163,19 @@ export default class MapUtils {
    * Consecutive coordinates should not have a link whose distance is greater than `distance_threshold`
    * @param {TomTomRoute} routeResult
    * @param {number} distance_threshold
+   * @returns {Coordinate[]} `dilutedPoints`
    */
-  static diluteRoutePoints(routeResult, distance_threshold = 500) {
+  static diluteRoutePoints(routeResult, distance_threshold) {
+    if (!routeResult)
+      throw new Error("`routeResult argument is undefined [diluteRoutePoints]");
+
+    // If the distance_threshold is not provided, then calculate it automatically
+    if (!distance_threshold)
+      distance_threshold = this.getDistanceThreshold(
+        routeResult.points[0],
+        routeResult.points[routeResult.points.length - 1]
+      );
+
     let dilutedPoints = [];
     let lastCoordinate = {
       lat: 0,
@@ -191,11 +208,13 @@ export default class MapUtils {
    * to be used to determine consecutive coordinates
    * @param {Coordinate} source
    * @param {Coordinate} destination
+   * @returns {number} - Distance threshold in meters.
    */
   static getDistanceThreshold(source, destination) {
     let distanceThresholdRoute;
-    /**  If the length of the route is longer than the MAX_CITY_DISTANCE then use
-     *   DISTANCE_THRESHOLD_INTERCITY for consecutive coordinate checks.
+    /** If the length of the route is longer than the MAX_CITY_DISTANCE then assume that
+     *  the start and end coordinates are residing in different cities. Use
+     *  DISTANCE_THRESHOLD_INTERCITY in this case for consecutive coordinate checks.
      */
     const distance = this.getDistance(source, destination);
     if (distance > MAX_CITY_DISTANCE)

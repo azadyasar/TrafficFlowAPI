@@ -115,8 +115,22 @@
       "DefaultParams": {
         "lineColor": "008000",
         "lineWidth": 4,
-        "markerFillColor": "800000"
+        "markerFillColor": "800000",
+        "height": 512,
+        "width": 512,
+        "Colors": {
+          "red": "FF0000",
+          "orange": "FF8600",
+          "yellow": "EEFF00",
+          "green": "06FF00"
+        }
       }
+    }
+  },
+
+  "Avl": {
+    "DefaultParams": {
+      "trajectoryRepeat": 3
     }
   },
 

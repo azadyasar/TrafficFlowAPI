@@ -1,9 +1,10 @@
 import TomTomAPIWrapper from "../../services/tomtom.service";
 import HereAPIWrapper from "../../services/here.service";
-import axios from "axios";
-import logger from "../../utils/logger";
 import HereUtils from "../../utils/here.utils";
 import MapUtils from "../../utils/map.utils";
+import Validator from "../middleware/validator.mw";
+import axios from "axios";
+import logger from "../../utils/logger";
 import Joi from "joi";
 import config from "config";
 
@@ -30,6 +31,9 @@ const MAX_CITY_DISTANCE = 1000 * config.get("MapUtils.MaximumCityDistance");
  */
 const MAX_DISTANCE = 1000 * config.get("MapUtils.MaximumRouteDistance");
 
+const INTERNAL_ERROR_MSG = config.get("Mlg.Warnings.InternalError");
+const MALFORMED_PARAM_MSG = config.get("Mlg.Warnings.MalformedParameters");
+
 logger.info(
   `DISTANCE_THRESHOLD_INTRACITY is set to ${DISTANCE_THRESHOLD_INTRACITY} meters`
 );
@@ -38,34 +42,6 @@ logger.info(
 );
 logger.info(`MAX_CITY_DISTANCE is set to ${MAX_CITY_DISTANCE} meters`);
 logger.info(`MAX_DISTANCE is set to ${MAX_DISTANCE} meters`);
-
-/**
- * A Joi Validation Schema to be used againts TomTom's Flow API Requests.
- * - `lat`: latitude is required
- * - `long`: longitute is required
- * - `zoom`: zoom is optional. must be in the range of [0, 22]
- */
-const TomTomFlowJoiSchema = {
-  lat: Joi.number().required(),
-  long: Joi.number().required(),
-  zoom: Joi.number()
-    .min(0)
-    .max(22),
-  repeat: Joi.number()
-    .min(1)
-    .max(25)
-};
-
-const SourceDestParamValidator = Joi.object({
-  source: Joi.object({
-    lat: Joi.number().required(),
-    long: Joi.number().required()
-  }).required(),
-  destination: Joi.object({
-    lat: Joi.number().required(),
-    long: Joi.number().required()
-  }).required()
-});
 
 function getPromiseAlmost(promiseList) {
   return Promise.all(
@@ -78,25 +54,12 @@ function getPromiseAlmost(promiseList) {
   );
 }
 
-/**
- *
- * @param {Coordinate[]} points
- * @param {number} stepSize
- * @returns {Coordinate[]}
- */
-function reduceRoutePoints(points, stepSize = 10) {
-  let reducedPoints = [];
-  for (let i = 0; i < points.length; i += stepSize)
-    reducedPoints.push(points[i]);
-  return reducedPoints;
-}
-
 export default class AvlTrafficLayerController {
   /**
    * @summary Request must contain a coord parameter.
    * Returns a figure image containing the trajectory of the coordinate.
    * First it makes a request to the TomTom Flow API and makes use of the returned
-   * coordinates. If `repeat` value is greate than 1. It picks up the last coordianate
+   * coordinates. If `repeat` value is greater than 1, then it picks up the last coordinate
    * and makes another TomTom Flow API request, and so on.
    * /api/v1/avl/trajectory
    * @param {Express.Request}
@@ -111,15 +74,12 @@ export default class AvlTrafficLayerController {
     );
     // 400 if the client does not provide a coordinate
     if (!req.query.hasOwnProperty("coord")) {
-      res.status(400).send("Provide a coordinate -coord-");
+      res.status(400).send("-coord- query parameter is missing");
       return;
     }
     // Parse input coordinate into lat, long
     const coordList = req.query.coord.split(",");
-    if (coordList.length < 2) {
-      res.status(400).send("-coord- query parameter is malformed");
-      return;
-    }
+
     let validateQuery = {
       lat: coordList[0],
       long: coordList[1],
@@ -129,15 +89,14 @@ export default class AvlTrafficLayerController {
     /**
      * Validate the input data
      */
-    Joi.validate(
+    Validator.AvlTrajectoryParamValidator.validate(
       validateQuery,
-      TomTomFlowJoiSchema,
       async (validError, value) => {
         if (validError) {
           logger.error(
             `Validation failed inside -apiGetTrajectoryFigure-: ${validError}`
           );
-          res.send("Invalid input. Details: " + validError);
+          res.send(MALFORMED_PARAM_MSG);
           return;
         }
 
@@ -145,25 +104,31 @@ export default class AvlTrafficLayerController {
           let tomtomFlowSegmentData,
             routes = [];
           // if the client doesn't provide a `repeat` parameter
-          const repeatTrajectory = value.repeat || 1;
-          logger.info(`Repeating trajectory for ${repeatTrajectory}`);
+          logger.info(`Repeating trajectory for ${value.repeat} times.`);
           let currentCoord = {
             lat: value.lat,
             long: value.long
           };
-          for (let i = 0; i < repeatTrajectory; i++) {
+          /**
+           * Request flow information `repeatTrajectory` times to get the trajectory of the route.
+           * Unfortunately we can't request all of the coordinates at once as we need to retrieve
+           * the succeeding flow information.
+           */
+          for (let i = 0; i < value.repeat; i++) {
             tomtomFlowSegmentData = await TomTomAPIWrapper.getFlowInfoCoord({
               lat: currentCoord.lat,
               long: currentCoord.long
             });
             logger.info(`Iter #${i + 1}: Received: ${tomtomFlowSegmentData}`);
             routes.push({ coords: tomtomFlowSegmentData.coordinates });
+            // Get the last coordinate of the current trajectory
             currentCoord =
               tomtomFlowSegmentData.coordinates[
                 tomtomFlowSegmentData.coordinates.length - 1
               ];
           }
 
+          // Request a multiple route figure
           HereAPIWrapper.getMultipleRouteFigure({
             routes
           })
@@ -218,8 +183,24 @@ export default class AvlTrafficLayerController {
       return;
     }
 
-    // Parse incoming source and dest coordinates
-    let validateQuery = {};
+    /**
+     * Parse incoming query parameters
+     * - `height` Image height
+     * - `width` Image width
+     * - `source` Source coordinate
+     * - `dest` Destination coordinate
+     * - `disth` Distance threshold. How far should the consecutive poitns be?
+     * - `lineColor` Color of the route
+     * - `lineWidth` Width of the route in pixels
+     */
+    let validateQuery = {
+      height: req.query.height,
+      width: req.query.width,
+      disth: req.query.disth,
+      lineColor: req.query.lc,
+      lineWidth: req.query.lw
+    };
+
     let tmpCoordList = req.query.source.split(",");
     validateQuery.source = {
       lat: tmpCoordList[0],
@@ -232,7 +213,7 @@ export default class AvlTrafficLayerController {
     };
 
     // Validate incoming data
-    SourceDestParamValidator.validate(
+    Validator.AvlRouteFigureParamValidator.validate(
       validateQuery,
       async (validError, value) => {
         if (validError) {
@@ -250,11 +231,6 @@ export default class AvlTrafficLayerController {
             value.source,
             value.destination
           );
-
-          const distanceThresholdRoute = MapUtils.getDistanceThreshold(
-            value.source,
-            value.destination
-          );
           /**
            * Reduce route coordinates if the client wants to render markers in order
            * not to run out of markers.
@@ -263,25 +239,25 @@ export default class AvlTrafficLayerController {
           if (req.query.useMarker)
             filteredCoordinates = MapUtils.diluteRoutePoints(
               routeResult,
-              distanceThresholdRoute
+              value.disth
             );
           else filteredCoordinates = routeResult.points;
           /**
-           * Pack the returned list of points(or route) into RouteList object
-           * because getRouteFigureFromCoords expects a RouteList object
-           * RouteList {
-           *  routes: [
-           *    {
-           *      coords: [{Coordinate}, ...]
-           *    }
-           *  ]
-           * }
+           * Pack the returned list of points into a Route object
+           * because getRouteFigureFromCoords expects so.
+           *
            */
-          HereAPIWrapper.getRouteFigureFromCoords(
+          HereAPIWrapper.getSingleRouteFigure(
             {
-              routes: [{ coords: filteredCoordinates }]
+              coords: filteredCoordinates,
+              lineColor: value.lineColor,
+              lineWidth: value.lineWidth
             },
-            { useMarker: req.query.useMarker }
+            {
+              useMarker: req.query.useMarker,
+              height: value.height,
+              width: value.width
+            }
           )
             .then(hereFigureResult => {
               hereFigureResult.pipe(res);
@@ -291,14 +267,14 @@ export default class AvlTrafficLayerController {
                 `An error occured during hereFigure call: ${hereFigureError}` +
                   `, stack: ${hereFigureError.stack}`
               );
-              res.status(500).send("An internal error occured");
+              res.status(500).send(INTERNAL_ERROR_MSG);
             });
         } catch (error) {
           logger.error(
             `Error occured inside -apiGetRouteFigure: ${error}` +
               `, stack: ${error.stack}`
           );
-          res.status(500).send("An internal error occured");
+          res.status(500).send(INTERNAL_ERROR_MSG);
         }
       }
     );
@@ -351,7 +327,7 @@ export default class AvlTrafficLayerController {
     };
 
     // Validate incoming data
-    SourceDestParamValidator.validate(
+    Validator.SourceDestParamValidator.validate(
       validateQuery,
       async (validError, value) => {
         if (validError) {
@@ -377,6 +353,9 @@ export default class AvlTrafficLayerController {
           return;
         }
 
+        /**
+         * Get the distance threshold value to be used to separate consecutive coordinates
+         */
         const distanceThresholdRoute = MapUtils.getDistanceThreshold(
           value.source,
           value.destination
@@ -388,18 +367,21 @@ export default class AvlTrafficLayerController {
             value.source,
             value.destination
           );
-
+          // Dilute the coordinates by filtering out close points
           const pointFlowPromList = await MapUtils.diluteRoutePointsWorker(
             routeResult,
             TomTomAPIWrapper.getFlowInfoCoord,
             distanceThresholdRoute
           );
+          /* Transform Promise.all to Promise.almost to make the Promise list robust to errors
+           * A few request failures out of tens of requests are negligible
+           */
           const promiseAlmost = getPromiseAlmost(pointFlowPromList);
           let responseData = { coords: [] };
           promiseAlmost
             .then(flowInfoList => {
               flowInfoList.forEach(flowInfo => {
-                if (responseData.failure) {
+                if (flowInfo.failure) {
                   logger.warn(`Something went wrong ${responseData}`);
                   return;
                 }
@@ -408,6 +390,10 @@ export default class AvlTrafficLayerController {
                   logger.warn(`${flowInfo} doesn't have any info`);
                   return;
                 }
+                /**
+                 *  Construct responseData and push. flowInfo.coordinates[0] is the first of the
+                 *  points list as it is the requested coordinate.
+                 */
                 responseData.coords.push({
                   coord: flowInfo.coordinates[0],
                   freeFlowSpeed: flowInfo.freeFlowSpeed,
