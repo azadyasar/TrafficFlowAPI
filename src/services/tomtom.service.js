@@ -320,6 +320,8 @@ class TomTomUtils {
  * @typedef Coordinate
  * @property {number} lat  - The latitude of the given coordinate
  * @property {number} long - The longitude of the given coordinate
+ * @property {string} markerFillColor -What color this marker should be filled with. Should be defined as hex
+ * @property {number} trafficJam
  */
 
 /**

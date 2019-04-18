@@ -460,12 +460,39 @@ export default class AvlTrafficLayerController {
         )}`
     );
 
-    if (
-      !req.query.hasOwnProperty("source") ||
-      !req.query.hasOwnProperty("dest")
-    ) {
-      res.status(400).send("-source- and -dest- query parameters are missing");
-    }
+    /**
+     * @type Route
+     */
+    let route = { coords: [] };
+    req.promiseAlmost.then(async flowInfoList => {
+      flowInfoList.forEach(flowInfo => {
+        if (flowInfo.failure) {
+          logger.warn(`flowInfo is defected ${responseData}`);
+          return;
+        }
+        // Check if flowInfo has information
+        if (!flowInfo.coordinates) {
+          logger.warn(`${flowInfo} doesn't have any flow info`);
+          return;
+        }
+        /**
+         *  Construct responseData and push. flowInfo.coordinates[0] is the first of the
+         *  points list as it is the requested coordinate.
+         */
+        route.coords.push({
+          lat: flowInfo.coordinates[0].lat,
+          long: flowInfo.coordinates[0].long,
+          trafficJam: MapUtils.getTrafficJam(flowInfo)
+        });
+      });
+      try {
+        const figure = await HereAPIWrapper.getMarkerizedFlowFigure(route);
+        figure.pipe(res);
+      } catch (error) {
+        logger.error(error);
+        res.status(500).send(INTERNAL_ERROR_MSG);
+      }
+    });
   }
 }
 
@@ -474,6 +501,8 @@ export default class AvlTrafficLayerController {
  * @typedef Coordinate
  * @property {number} lat  - The latitude of the given coordinate
  * @property {number} long - The longitude of the given coordinate
+ * @property {string} markerFillColor -What color this marker should be filled with. Should be defined as hex
+ * @property {number} trafficJam
  */
 
 /**

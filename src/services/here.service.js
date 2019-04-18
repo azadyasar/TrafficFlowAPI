@@ -229,6 +229,76 @@ export default class HereAPIWrapper {
         });
     });
   }
+
+  /**
+   *
+   * @param {Route} route
+   */
+  static async getMarkerizedFlowFigure(route, options = {}) {
+    // Validate
+    if (!route)
+      return new Promise((_, reject) =>
+        reject(
+          new Error("`route` argument of getSingleRouteFigure is undefined")
+        )
+      );
+
+    // Get the first route
+    const routeCoords = route.coords;
+    /**
+     * Set up optional parameters
+     */
+    const figureHeight = options.height || hereRouteFigureHeight;
+    const figureWidth = options.width || hereRouteFigureWidth;
+    let txt = "h=" + figureHeight + "&w=" + figureWidth + "&mlbl=0";
+    let idx = 0;
+    routeCoords.forEach(coord => {
+      txt += `&m${idx}=` + coord.lat + "," + coord.long;
+      txt += `&mfc${idx}=`;
+      if (coord.trafficJam > 5) txt += TrafficHexColors.red;
+      else txt += TrafficHexColors.green;
+      idx++;
+    });
+
+    logger.info(
+      "Executing GET Request from -getRouteFigureFromCoords- to " +
+        hereRouteEndpointURL +
+        ` txt: ${txt}, options: ${JSON.stringify(options)}`
+    );
+
+    return new Promise((resolve, reject) => {
+      axios
+        .post(hereRouteEndpointURL, txt, {
+          responseType: "stream",
+          params: {
+            app_id: hereAppID,
+            app_code: hereAppCode
+          }
+        })
+        .then(response => {
+          logger.info("getRouteFigureFromCoords got response");
+          resolve(response.data);
+        })
+        .catch(error => {
+          logger.error(
+            `getRouteFigureFromCoords get request returned with error: ${error}` +
+              `, statusCode = ${error.response && error.response.status}` +
+              `, stack: ${error.stack}`
+          );
+          if (error.response && error.response.status)
+            reject({
+              error: new Error(
+                "Response from HERE API has a non-200 status code"
+              ),
+              statusCode: error.response.status
+            });
+          else
+            reject({
+              error: new Error("Unknown error occured during HERE API call")
+            });
+        });
+    });
+  }
 }
 
 /**
@@ -236,6 +306,8 @@ export default class HereAPIWrapper {
  * @typedef Coordinate
  * @property {number} lat  - The latitude of the given coordinate
  * @property {number} long - The longitude of the given coordinate
+ * @property {string} markerFillColor -What color this marker should be filled with. Should be defined as hex
+ * @property {number} trafficJam
  */
 
 /**
