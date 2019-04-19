@@ -25,9 +25,9 @@ const DISTANCE_THRESHOLD_INTERCITY = config.get(
  */
 const MAX_CITY_DISTANCE = 1000 * config.get("MapUtils.MaximumCityDistance");
 /**
- * Routes longer than `MAX_DISTANCE` will be discarded. As it takes to much requests
- * to third party APIs. Instead requesting portions of the route when needed is enforced
- * to end users.
+ * Routes longer than `MAX_DISTANCE` will be discarded. As it takes too many requests
+ * to the third party APIs. Instead of that, requesting the portions of the route when
+ * needed is enforced to end users.
  */
 const MAX_DISTANCE = 1000 * config.get("MapUtils.MaximumRouteDistance");
 
@@ -288,6 +288,7 @@ export default class AvlTrafficLayerController {
    * such as freeFlowSpeed, currentFlowSpeed, etc.
    * It first makes a request to the TomTom calcRoute endpoint, then uses the returned
    * coordinates to make another request to retrieve the traffic information.
+   *
    * Note that this is the first request handler for Route Flow requests, if this handler
    * ends succesfully then the latter handlers will be called.
    * @param {Express.Request} req
@@ -361,7 +362,8 @@ export default class AvlTrafficLayerController {
           // Dilute the coordinates by filtering out close points
           const pointFlowPromList = await MapUtils.diluteRoutePointsWorker(
             routeResult,
-            TomTomAPIWrapper.getFlowInfoCoord
+            TomTomAPIWrapper.getFlowInfoCoord,
+            req.query.disth
           );
 
           /**
@@ -486,7 +488,10 @@ export default class AvlTrafficLayerController {
         });
       });
       try {
-        const figure = await HereAPIWrapper.getMarkerizedFlowFigure(route);
+        const figure = await HereAPIWrapper.getMarkerizedFlowFigure(route, {
+          height: req.query.height,
+          width: req.query.width
+        });
         figure.pipe(res);
       } catch (error) {
         logger.error(error);

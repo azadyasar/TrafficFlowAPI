@@ -231,8 +231,14 @@ export default class HereAPIWrapper {
   }
 
   /**
-   *
+   * @summary Given a list of coordinates that defines a route, returns an image stream
+   * consisting of markers where markers are either green, red, or orange depending on the
+   * traffic jam.
    * @param {Route} route
+   * @param {object} options - Stores request related options
+   *  - `height`: Height of the figure in pixels
+   *  - `width`: Width of the figure in pixels
+   * @returns {Promise<axios.response.data} An image stream
    */
   static async getMarkerizedFlowFigure(route, options = {}) {
     // Validate
@@ -255,7 +261,8 @@ export default class HereAPIWrapper {
     routeCoords.forEach(coord => {
       txt += `&m${idx}=` + coord.lat + "," + coord.long;
       txt += `&mfc${idx}=`;
-      if (coord.trafficJam > 5) txt += TrafficHexColors.red;
+      if (coord.trafficJam > 7) txt += TrafficHexColors.red;
+      else if (coord.trafficJam > 4) txt += TrafficHexColors.orange;
       else txt += TrafficHexColors.green;
       idx++;
     });

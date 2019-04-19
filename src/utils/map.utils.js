@@ -235,10 +235,16 @@ export default class MapUtils {
    * @returns {number} Jam factor in the range of [0, 10]
    */
   static getTrafficJam(flowInfo) {
-    return Math.round(
+    const jf = Math.round(
       (10 * (flowInfo.freeFlowSpeed - flowInfo.currentSpeed)) /
         flowInfo.freeFlowSpeed
     );
+    logger.debug(
+      `Traffic jam for FFS: ${flowInfo.freeFlowSpeed} - CS: ${
+        flowInfo.currentSpeed
+      }` + ` JF: ${jf}`
+    );
+    return jf;
   }
 }
 

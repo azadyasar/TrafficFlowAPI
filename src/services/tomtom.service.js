@@ -229,7 +229,8 @@ export default class TomTomAPIWrapper {
       axios
         .get(tomtomCalcRouteURL, {
           params: {
-            key: tomtomAppKey
+            key: tomtomAppKey,
+            traffic: false
           }
         })
         .then(response => {
