@@ -22,5 +22,6 @@ router
     AvlTrafficLayerController.apiCalculateRouteTrafficFlow,
     AvlTrafficLayerController.apiGetRouteTrafficFigure
   );
+router.route("/route").get(AvlTrafficLayerController.apiGetRoute);
 
 export default router;

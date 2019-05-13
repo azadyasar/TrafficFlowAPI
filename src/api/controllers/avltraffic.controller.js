@@ -1,11 +1,8 @@
 import TomTomAPIWrapper from "../../services/tomtom.service";
 import HereAPIWrapper from "../../services/here.service";
-import HereUtils from "../../utils/here.utils";
 import MapUtils from "../../utils/map.utils";
 import Validator from "../middleware/validator.mw";
-import axios from "axios";
 import logger from "../../utils/logger";
-import Joi from "joi";
 import config from "config";
 
 /**
@@ -153,6 +150,71 @@ export default class AvlTrafficLayerController {
           res.status(500).send("Service is currently not functioning");
           return;
         }
+      }
+    );
+  }
+
+  /**
+   * @route api/v1/avl/route
+   * @summary Given a coordinate pair, responses with a route between them.
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  static async apiGetRoute(req, res, next) {
+    logger.info(
+      `apiGetRoute [AVL] got request: ${req.path}` +
+        `, params: ${JSON.stringify(req.params)}, query: ${JSON.stringify(
+          req.query
+        )}`
+    );
+
+    // 400 if the client does not provide the source and destination coordinates
+    if (
+      !req.query.hasOwnProperty("source") ||
+      !req.query.hasOwnProperty("dest")
+    ) {
+      res.status(400).send("-source- and -dest- query parameters are missing");
+      return;
+    }
+
+    let validateQuery = {};
+    let tmpCoordList = req.query.source.split(",");
+    validateQuery.source = {
+      lat: tmpCoordList[0],
+      long: tmpCoordList[1]
+    };
+    tmpCoordList = req.query.dest.split(",");
+    validateQuery.destination = {
+      lat: tmpCoordList[0],
+      long: tmpCoordList[1]
+    };
+
+    // Validate incoming data
+    Validator.SourceDestParamValidator.validate(
+      validateQuery,
+      async (validError, value) => {
+        if (validError) {
+          logger.error(
+            `Validation failed inside -apiGetRoute(avl)-: ${validError}` +
+              `, stack: ${validError.stack}`
+          );
+          res.status(400).send("Malformed query. Fix your parameters");
+          return;
+        }
+
+        // Get a route between source and destination coordinates
+        TomTomAPIWrapper.getRoute(value.source, value.destination)
+          .then(routeResult => {
+            res.send(routeResult);
+          })
+          .catch(error => {
+            logger.error(
+              `An error occured during route request to TomTom from getRoute of AVL: ${error}` +
+                `, stack: ${error.stack}`
+            );
+            res.status(500).send(INTERNAL_ERROR_MSG);
+          });
       }
     );
   }
