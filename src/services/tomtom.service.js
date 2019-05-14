@@ -245,6 +245,7 @@ export default class TomTomAPIWrapper {
           if (routes.length === 0)
             reject(new Error("response.data.routes has length 0"));
 
+          let summary = "";
           const legs = routes[0].legs;
           if (legs.length === 0)
             reject(new Error("response.data.routes.legs has length 0"));
@@ -257,9 +258,19 @@ export default class TomTomAPIWrapper {
           let coordinates = points.map(coord => {
             return { lat: coord.latitude, long: coord.longitude };
           });
+
+          let legsConstructed = legs.map(leg => {
+            summary += leg.summary;
+            return leg.points.map(coord => {
+              return { lat: coord.latitude, long: coord.longitude };
+            });
+          });
+
+          // Points are redundant. They should be removed after refactoring the relevant endpoints.
           resolve({
-            summary: response.data.routes[0].legs[0].summary,
-            points: coordinates
+            summary: summary,
+            points: coordinates,
+            legs: legsConstructed
           });
         })
         .catch(error => {
