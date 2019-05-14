@@ -179,16 +179,28 @@ export default class AvlTrafficLayerController {
     }
 
     let validateQuery = {};
+    // Source
     let tmpCoordList = req.query.source.split(",");
     validateQuery.source = {
       lat: tmpCoordList[0],
       long: tmpCoordList[1]
     };
+    // Destination
     tmpCoordList = req.query.dest.split(",");
     validateQuery.destination = {
       lat: tmpCoordList[0],
       long: tmpCoordList[1]
     };
+    // Checkpoints
+    tmpCoordList = req.query.checkpoints.split(",");
+    const checkpoints = [];
+    for (let i = 1; i < tmpCoordList.length; i += 2) {
+      checkpoints.push({
+        lat: tmpCoordList[i - 1],
+        long: tmpCoordList[i]
+      });
+    }
+    logger.info("Checkpoints: ", checkpoints);
 
     // Validate incoming data
     Validator.SourceDestParamValidator.validate(
@@ -204,7 +216,7 @@ export default class AvlTrafficLayerController {
         }
 
         // Get a route between source and destination coordinates
-        TomTomAPIWrapper.getRoute(value.source, value.destination)
+        TomTomAPIWrapper.getRoute(value.source, value.destination, checkpoints)
           .then(routeResult => {
             res.send(routeResult);
           })

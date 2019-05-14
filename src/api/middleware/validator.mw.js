@@ -22,7 +22,8 @@ const JoiCoordinateSchema = Joi.object({
   lat: Joi.number()
     .min(-90)
     .max(90)
-    .required(),
+    .required()
+    .error(() => "Latitude is required"),
   long: Joi.number()
     .min(-180)
     .max(180)
@@ -36,7 +37,8 @@ module.exports = {
    */
   SourceDestParamValidator: Joi.object({
     source: JoiCoordinateSchema,
-    destination: JoiCoordinateSchema
+    destination: JoiCoordinateSchema,
+    checkpoints: Joi.array().items(JoiCoordinateSchema)
   }),
   /**
    * A Joi Validation Schema to be used againts TomTom's Flow API Requests.

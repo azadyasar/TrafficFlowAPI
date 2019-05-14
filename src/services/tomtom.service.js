@@ -204,27 +204,28 @@ export default class TomTomAPIWrapper {
    * Given a start and end coordinate, calculates the route in between
    * @param {Coordinate} sourceCoord - Starting point
    * @param {Coordinate} destCoord - Destination point
+   * @param {Coordinate[]} checkpoints - A list of coordinates to pass through while building a route
    * @returns {Promise<TomTomRoute>} - A list of coordinates and a summary
    *  that defines the route.
    */
-  static async getRoute(sourceCoord, destCoord) {
+  static async getRoute(sourceCoord, destCoord, checkpoints = []) {
     /**
      * Construct the URL for calculateRoute endpoint
      * calculateRoute/souce.lat,source.long:dest.lat,dest.long/json
      */
-    const coordParam =
-      sourceCoord.lat +
-      "," +
-      sourceCoord.long +
-      ":" +
-      destCoord.lat +
-      "," +
-      destCoord.long;
+    let coordParam = sourceCoord.lat + "," + sourceCoord.long + ":";
+    checkpoints.forEach(coord => {
+      coordParam += coord.lat + "," + coord.long + ":";
+    });
+    coordParam += destCoord.lat + "," + destCoord.long;
+
     const tomtomCalcRouteURL = tomtomRouteBaseURL.replace(
       "SOURCE_DEST",
       coordParam
     );
-    logger.info(`GET request from -getRoute- to :${tomtomCalcRouteURL}`);
+    logger.info(
+      `Executing GET request from -getRoute- to :${tomtomCalcRouteURL}`
+    );
     return new Promise((resolve, reject) => {
       axios
         .get(tomtomCalcRouteURL, {
