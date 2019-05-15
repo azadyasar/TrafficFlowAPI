@@ -2,6 +2,7 @@ import TomTomAPIWrapper from "../../services/tomtom.service";
 import logger from "../../utils/logger";
 import Validators from "../middleware/validator.mw";
 import config from "config";
+import MapUtils from "../../utils/map.utils";
 
 const INTERNAL_ERROR_MSG = config.get("Mlg.Warnings.InternalError");
 const MALFORMED_PARAM_MSG = config.get("Mlg.Warnings.MalformedParameters");
@@ -50,7 +51,10 @@ export default class TomTomAPIController {
          */
         TomTomAPIWrapper.getFlowInfoCoord({ lat: value.lat, long: value.long })
           .then(response => {
+            const jam = MapUtils.getTrafficJam(response);
+            response.jamFactor = jam;
             res.json(response);
+
           })
           .catch(error => {
             logger.error(
