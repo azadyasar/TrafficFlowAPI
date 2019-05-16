@@ -261,9 +261,11 @@ export default class TomTomAPIWrapper {
 
           let legsConstructed = legs.map(leg => {
             summary += leg.summary;
-            return leg.points.map(coord => {
+            const legPoints = leg.points.map(coord => {
               return { lat: coord.latitude, long: coord.longitude };
             });
+            leg.points = legPoints;
+            return leg;
           });
 
           // Points are redundant. They should be removed after refactoring the relevant endpoints.
