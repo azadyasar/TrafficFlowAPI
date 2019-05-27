@@ -158,7 +158,7 @@ export default class MapUtils {
       }
       lastCoordinate = point;
       pointFlowPromList.push(callForEachPointFunc(point));
-      if (++counter % 50 === 0) await this.sleep(1000);
+      if (++counter % 50 === 0) await this.sleep(500);
     });
     return pointFlowPromList;
   }

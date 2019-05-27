@@ -28,6 +28,7 @@ const JoiCoordinateSchema = Joi.object({
     .min(-180)
     .max(180)
     .required()
+    .error(() => "Longitude is required")
 });
 
 module.exports = {
@@ -40,6 +41,15 @@ module.exports = {
     destination: JoiCoordinateSchema,
     checkpoints: Joi.array().items(JoiCoordinateSchema)
   }),
+
+  /**
+   * A coordinate list validator. Used by: /api/v1/avl/batchFlow
+   */
+  BatchCoordValidator: Joi.object({
+    points: Joi.array().items(JoiCoordinateSchema),
+    disth: Joi.number()
+  }),
+
   /**
    * A Joi Validation Schema to be used againts TomTom's Flow API Requests.
    * - `lat`: latitude is required

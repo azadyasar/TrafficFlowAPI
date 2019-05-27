@@ -23,5 +23,6 @@ router
     AvlTrafficLayerController.apiGetRouteTrafficFigure
   );
 router.route("/route").get(AvlTrafficLayerController.apiGetRoute);
+router.route("/batchFlow").get(AvlTrafficLayerController.apiGetBatchFlowInfo);
 
 export default router;

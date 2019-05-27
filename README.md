@@ -33,20 +33,23 @@ Provides a traffic flow information for the routes.
 
 ## AVL Traffic Layer API
 
+All endpoints are in the `/api/v1` namespace.
+
 ### TomTom Related Endpoints
 
-- `/flow` Returns the flow information of the given coordinate. Must provide a **_coord_** query parameter, **_zom_** is optional.
-- `/tile` Returns the tile image of the given coordinate. Must provide a **_coord_** query parameter, **_zom_** is optional. A zoom level is required to convert the given coordinate to its corresponding tile as it changes with respect to zoom level. Zoom - **_15_** is used by default
+- `/tomtom/flow` Returns the flow information of the given coordinate. Must provide a **_coord_** query parameter, **_zom_** is optional.
+- `/tomtom/tile` Returns the tile image of the given coordinate. Must provide a **_coord_** query parameter, **_zom_** is optional. A zoom level is required to convert the given coordinate to its corresponding tile as it changes with respect to zoom level. Zoom - **_15_** is used by default
 
 ### HERE Maps API Related Endpoints
 
-- `/routeFigure` A route that corresponds to the given coordinate list is drawn on the map and returned as a stream. Must provide a `route` coordinate array as `lat1,long1,lat2,long2,...,latN,longN`.
+- `/here/routeFigure` A route that corresponds to the given coordinate list is drawn on the map and returned as a stream. Must provide a `route` coordinate array as `lat1,long1,lat2,long2,...,latN,longN`.
 
 ### AVL Traffic Layer Endpoints
 
-- `/trajectory` A trajectory of the given coordinate is generated with respect to the flow of the road (in which direction the traffic flows to). Returns an image containing the route of the trajectory. Must provide a `coord` as `lat,long`. Provide `repeat` parameter to get a predictive continuous route. `repeat` should be less than 7 and ideally 5.
-- `/route/figure` A figure of a route between source and destination. Given that the client provides a source and a destination coordinate, this endpoint finds a route between them, draws the route on a map and return its figure.
-- `/route/flow` Finds a route between source and destination coordinates. Then retrieves the traffic information of that route.
+- `/avl/trajectory` A trajectory of the given coordinate is generated with respect to the flow of the road (in which direction the traffic flows to). Returns an image containing the route of the trajectory. Must provide a `coord` as `lat,long`. Provide `repeat` parameter to get a predictive continuous route. `repeat` should be less than 7 and ideally 5.
+- `/avl/route/figure` A figure of a route between source and destination. Given that the client provides a source and a destination coordinate, this endpoint finds a route between them, draws the route on a map and return its figure.
+- `/avl/route/flow` Finds a route between source and destination coordinates. Then retrieves the traffic information of that route.
+- `/avl/route` Given a pair of coordinates, returns a route between them. `source` and `dest` query parameters are required. `checkpoints` can be supplied to be used during route calculation.
 
 ## Miscallenous
 

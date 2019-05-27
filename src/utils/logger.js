@@ -27,12 +27,14 @@ if (config.has("Logger.logLevel")) {
   logLevel = config.get("Logger.logLevel");
   console.log(chalk.green("[CONFIG]:") + ` logLevel: ${logLevel}`);
 } else {
-  logLevel = "debug";
+  logLevel = "info";
   console.log(
     chalk.orange("[CONFIG]:") +
       ` No logLevel is specified inside default.json config. Using default value: ${logLevel}`
   );
 }
+
+if (process.env.NODE_ENV === "production") logLevel = "info";
 
 if (config.has("Logger.logLabel")) {
   logLabel = config.get("Logger.logLabel");

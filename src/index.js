@@ -10,7 +10,7 @@ const server = app.listen(port, () => {
 });
 
 /**
- * Shut down server on uncaughtExceptions and SIGTERM signal in order not to leave the port dangle
+ * Shut down server on uncaughtExceptions and SIGTERM signal in order not to leave the port dangling
  */
 process
   .on("uncaughtException", exception => {

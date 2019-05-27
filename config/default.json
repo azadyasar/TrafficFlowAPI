@@ -13,8 +13,8 @@
   "MapUtils": {
     "MaximumRouteDistance": 1000,
     "MaximumCityDistance": 50,
-    "DistanceThresholdIntraCity": 500,
-    "DistanceThresholdInterCity": 2000
+    "DistanceThresholdIntraCity": 200,
+    "DistanceThresholdInterCity": 1000
   },
 
   "TomTom": {
