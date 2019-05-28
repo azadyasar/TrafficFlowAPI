@@ -235,6 +235,24 @@ export default class MapUtils {
    * @returns {number} Jam factor in the range of [0, 10]
    */
   static getTrafficJam(flowInfo) {
+    /**
+     * Check if the incoming data is processible
+     */
+    if (!flowInfo) {
+      logger.warn("-getTrafficJam- received empty flowInfo");
+      return 0;
+    }
+
+    if (!flowInfo.currentSpeed || !flowInfo.freeFlowSpeed) {
+      logger.warn("-getTrafficJam- received partially empty flowInfo");
+      return 0;
+    }
+
+    if (flowInfo.freeFlowSpeed === 0) {
+      logger.warn("-getTrafficJam- freeFlowSpeed is 0");
+      return 0;
+    }
+
     const jf = Math.round(
       (10 * (flowInfo.freeFlowSpeed - flowInfo.currentSpeed)) /
         flowInfo.freeFlowSpeed
