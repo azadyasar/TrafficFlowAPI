@@ -576,7 +576,7 @@ export default class AvlTrafficLayerController {
 
   /**
    * @todo Should we dilute requested coordinates as we do for the route coords?
-   * /api/v1/avl/batchFlow
+   * GET /api/v1/avl/batchFlow
    * @summary Given a batch of coordinates returns their flow information. Coordinates are separated with a comma.
    * @param {Express.Request} req
    * @param {Express.Response} res
@@ -597,6 +597,126 @@ export default class AvlTrafficLayerController {
     }
 
     const reqCoordList = req.query.coords.split(",");
+    /**  Coordinate list is named as points because we will make use of the dilueRoutePointsWorker
+     *  and it expects a TomTomRoute
+     */
+    reqCoordList.forEach(reqCoord => logger.debug(reqCoord));
+    let validateQuery = {
+      points: []
+    };
+    for (let i = 1; i < reqCoordList.length; i += 2) {
+      let coord = {};
+      coord.lat = reqCoordList[i - 1];
+      coord.long = reqCoordList[i];
+      validateQuery.points.push(coord);
+    }
+
+    logger.debug("Constructed points:");
+    validateQuery.points.forEach(point => logger.debug(JSON.stringify(point)));
+
+    Validator.BatchCoordValidator.validate(
+      validateQuery,
+      async (validError, batchCoord) => {
+        if (validError) {
+          logger.error(
+            `Validation failed inside -apiGetBatchFlowInfo-: ${validError}` +
+              `, stack: ${validError.stack}`
+          );
+          res.status(403).send(MALFORMED_PARAM_MSG);
+          return;
+        }
+
+        // Dilute the coordinates by filtering out close points
+        const pointsFlowPromList = await MapUtils.diluteRoutePointsWorker(
+          batchCoord,
+          TomTomAPIWrapper.getFlowInfoCoord,
+          req.query.disth
+        );
+
+        /**
+         * Transform Promise.all to Promise.almost to make the Promise list robust to errors
+         * A few request failures out of hundredths of requests are negligible
+         */
+        const promiseAlmost = getPromiseAlmost(pointsFlowPromList);
+        let responseData = { timestamp: Date.now(), coordsFlowInfoList: [] };
+        promiseAlmost
+          .then(flowInfoList => {
+            flowInfoList.forEach(flowInfo => {
+              if (flowInfo.failure) {
+                logger.warn(
+                  `-apiGetBatchFlowInfo- flowInfo is defected ${flowInfo}`
+                );
+                return;
+              }
+              // Check if flowInfo has information
+              if (!flowInfo.coordinates) {
+                logger.warn(
+                  `-apiGetBatchFlowInfo- ${flowInfo} doesn't have any flow info.`
+                );
+                return;
+              }
+              /**
+               * Construct responseData and push flowInfo.
+               */
+              const jamFactor = MapUtils.getTrafficJam(flowInfo);
+              responseData.coordsFlowInfoList.push({
+                coord: flowInfo.coordinates[0],
+                freeFlowSpeed: flowInfo.freeFlowSpeed,
+                currentSpeed: flowInfo.currentSpeed,
+                currentTravelTime: flowInfo.currentTravelTime,
+                freeFlowTravelTime: flowInfo.freeFlowTravelTime,
+                confidence: flowInfo.confidence,
+                frc: flowInfo.frc,
+                jamFactor: jamFactor
+              });
+            });
+            logger.info(
+              `#${
+                flowInfoList.length
+              } of requests has been made from -apiBatchFlowInfo-`
+            );
+            res.json(responseData);
+          })
+          .catch(promiseAlmostError => {
+            logger.error(
+              `An error occured during multiple flow requests to TomTom from -apiBatchFlowInfo: ` +
+                `${promiseAlmostError}, stack: ${promiseAlmostError.stack}`
+            );
+            res.status(500).send(INTERNAL_ERROR_MSG);
+            return;
+          });
+      }
+    );
+  }
+
+  /**
+   * @todo Should we dilute requested coordinates as we do for the route coords?
+   * POST /api/v1/avl/batchFlow
+   * @summary Given a batch of coordinates returns their flow information. Coordinates are separated with a comma.
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  static async apiGetBatchFlowInfo(req, res, next) {
+    logger.info(
+      `POST apiGetBatchFlowInfo is requested: ${req.path}` +
+        `, body: ${JSON.stringify(req.body)}, query: ${JSON.stringify(
+          req.query
+        )}`
+    );
+
+    logger.info(req);
+    logger.info(Object.keys(req));
+    logger.info(req.body);
+    logger.info(Object.keys(req.body));
+
+    // 400 if the client does not provide a list of coordinates
+    if (!req.body.hasOwnProperty("coords")) {
+      res.status(400).send("-coords- query parameter is missing");
+      return;
+    }
+
+    const reqCoordList = req.body.coords.split(",");
     /**  Coordinate list is named as points because we will make use of the dilueRoutePointsWorker
      *  and it expects a TomTomRoute
      */
