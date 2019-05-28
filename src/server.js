@@ -13,6 +13,7 @@ app.use(cors());
 process.env.NODE_ENV !== "production" &&
   app.use(morgan("combined", { stream: logger.stream }));
 app.use(bodyParser.json());
+app.use(bodyParser({ limit: "100mb" }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Register API routes
