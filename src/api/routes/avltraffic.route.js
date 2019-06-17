@@ -25,5 +25,6 @@ router
 router.route("/route").get(AvlTrafficLayerController.apiGetRoute);
 router.route("/batchFlow").get(AvlTrafficLayerController.apiGetBatchFlowInfo);
 router.route("/batchFlow").post(AvlTrafficLayerController.apiGetBatchFlowInfo);
+router.route("/weather").get(AvlTrafficLayerController.apiGetWeatherData);
 
 export default router;

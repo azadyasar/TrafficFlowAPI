@@ -1,5 +1,6 @@
 import TomTomAPIWrapper from "../../services/tomtom.service";
 import HereAPIWrapper from "../../services/here.service";
+import OpenWeatherAPIWrapper from "../../services/openweather.service";
 import MapUtils from "../../utils/map.utils";
 import Validator from "../middleware/validator.mw";
 import logger from "../../utils/logger";
@@ -705,8 +706,6 @@ export default class AvlTrafficLayerController {
         )}`
     );
 
-    logger.info(req);
-    logger.info(Object.keys(req));
     logger.info(req.body);
     logger.info(Object.keys(req.body));
 
@@ -730,9 +729,6 @@ export default class AvlTrafficLayerController {
       coord.long = reqCoordList[i];
       validateQuery.points.push(coord);
     }
-
-    logger.debug("Constructed points:");
-    validateQuery.points.forEach(point => logger.debug(JSON.stringify(point)));
 
     Validator.BatchCoordValidator.validate(
       validateQuery,
@@ -808,6 +804,59 @@ export default class AvlTrafficLayerController {
       }
     );
   }
+
+  /**
+   * GET /api/v1/avl/weather?coord=lat,long
+   * Given a `coord`, returns the weather information of that coordinate
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  static async apiGetWeatherData(req, res, next) {
+    logger.info(
+      `apiGetWeatherData got request: ${req.path} params: ${JSON.stringify(
+        req.params
+      )}, query: ${JSON.stringify(req.query)}`
+    );
+
+    // 400 if the client does not provide a coordinate
+    if (!req.query.hasOwnProperty("coord")) {
+      res.status(400).send("-coord- query parameter is missing.");
+      return;
+    }
+    // Parse the input coordinate into lat, long of the reqParams.
+    const coordList = req.query.coord.split(",");
+    let validateQuery = {
+      lat: coordList[0],
+      long: coordList[1]
+    };
+
+    Validator.CoordValidator.validate(validateQuery, (validError, coord) => {
+      if (validError) {
+        logger.error(
+          `Validation failed inside -apiGetWeatherData-: ${validError}`
+        );
+        res.send(MALFORMED_PARAM_MSG);
+        return;
+      }
+
+      OpenWeatherAPIWrapper.getWeatherInfoCoord({
+        lat: coord.lat,
+        long: coord.long
+      })
+        .then(response => {
+          res.json(response);
+        })
+        .catch(error => {
+          logger.error(
+            "Error occured during OpenWeather API call " +
+              error.error +
+              `, statusCode: ${error.statusCode} stack: ${error.stack}`
+          );
+          res.status(500).send(INTERNAL_ERROR_MSG);
+        });
+    });
+  } // end of apiGetWeatherData
 }
 
 /**

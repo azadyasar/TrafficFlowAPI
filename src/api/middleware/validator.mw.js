@@ -71,6 +71,17 @@ module.exports = {
       .default(DEFAULT_TOMTOM_ZOOM_LEVEL)
   }),
 
+  CoordValidator: Joi.object({
+    lat: Joi.number()
+      .min(-90)
+      .max(90)
+      .required(),
+    long: Joi.number()
+      .min(-180)
+      .max(180)
+      .required()
+  }),
+
   HereRouteFigParamValidator: Joi.object({
     lineColor: Joi.string().regex(/[A-Fa-f0-9]{6}/)
   }),

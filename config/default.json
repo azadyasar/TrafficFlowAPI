@@ -128,6 +128,10 @@
     }
   },
 
+  "OpenWeather": {
+    "baseURL": "http://api.openweathermap.org/data/2.5/weather"
+  },
+
   "Avl": {
     "DefaultParams": {
       "trajectoryRepeat": 3
@@ -139,6 +143,7 @@
       "MissingHereAppID": "HERE_APP_ID environment variable is not set. Requests to HERE API will fail.",
       "MissingHereAppCode": "HERE_APP_CODE environment variable is not set. Requests to HERE API will fail.",
       "MissingTomTomAPIKey": "TOMTOM_API_KEY environment variable is not set. Requests to TomTom API will fail.",
+      "MissingOpenWeatherAPIKey": "OPEN_WEATHER_API_KEY environment variable is not set. Requests to OpenWeather API will fail.",
       "InternalError": "Internal error occured.",
       "MalformedParameters": "Parameters are malformed"
     }
