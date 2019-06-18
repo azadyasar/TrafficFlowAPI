@@ -42,7 +42,6 @@ export default class OpenWeatherAPIWrapper {
           }
         })
         .then(response => {
-          logger.info("GOT response -getWeatherInfoCoord-: " + response);
           /**
            * Reject if the response from OpenWeather is not OK
            */
@@ -103,10 +102,11 @@ class OpenWeatherUtils {
         long: data.coord.lon
       };
     }
+    destObject.main = {};
     if (data.main) {
-      destObject.temp = data.main.temp;
-      destObject.hum = data.main.hum;
-      destObject.pres = data.main.pressure;
+      destObject.main.temp = data.main.temp;
+      destObject.main.hum = data.main.humidity;
+      destObject.main.pres = data.main.pressure;
     }
     if (data.wind) destObject.wind = data.wind;
     return destObject;

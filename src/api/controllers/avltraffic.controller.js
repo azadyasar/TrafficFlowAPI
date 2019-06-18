@@ -719,7 +719,6 @@ export default class AvlTrafficLayerController {
     /**  Coordinate list is named as points because we will make use of the dilueRoutePointsWorker
      *  and it expects a TomTomRoute
      */
-    reqCoordList.forEach(reqCoord => logger.debug(reqCoord));
     let validateQuery = {
       points: []
     };
@@ -857,6 +856,102 @@ export default class AvlTrafficLayerController {
         });
     });
   } // end of apiGetWeatherData
+
+  /**
+   * POST /api/v1/avl/weather/batch?coords=lat1,long1,...,latN,longN
+   * Given a list of coordinates as latitude, longitude pairs. Dilutes them
+   * (by taking the each point within the 1km2 area) and returns their weather info
+   */
+  static async apiGetBatchWeatherData(req, res, next) {
+    logger.info(
+      `apiGetBatchWeatherData got request: ${req.path} body: ${JSON.stringify(
+        req.body
+      )}, query: ${JSON.stringify(req.query)}`
+    );
+
+    // 400 if the client does not provide a coordinate
+    if (!req.body.hasOwnProperty("coords")) {
+      res.status(400).send("-coords- query parameter is missing.");
+      return;
+    }
+
+    const reqCoordList = req.body.coords.split(",");
+    let validateQuery = {
+      points: []
+    };
+    for (let i = 1; i < reqCoordList.length; i += 2) {
+      let coord = {};
+      coord.lat = reqCoordList[i - 1];
+      coord.long = reqCoordList[i];
+      validateQuery.points.push(coord);
+    }
+
+    Validator.BatchCoordValidator.validate(
+      validateQuery,
+      async (validError, batchCoord) => {
+        if (validError) {
+          logger.error(
+            `Validation failed inside -apiGetBatchWeatherData-: ${validError}` +
+              `, stack: ${validError.stack}`
+          );
+          res.status(403).send(MALFORMED_PARAM_MSG);
+          return;
+        }
+
+        // Dilute the coordinates by filtering out close points
+        const pointsWeatherPromList = await MapUtils.diluteRoutePointsWorker(
+          batchCoord,
+          OpenWeatherAPIWrapper.getWeatherInfoCoord,
+          5000
+        );
+
+        /**
+         * Transform Promise.all to Promise.almost to make the Promise list robust to errors
+         * A few request failures out of hundredths of requests are negligible
+         */
+        const weatherBatchPromAlmost = getPromiseAlmost(pointsWeatherPromList);
+        let responseData = { timestamp: Date.now(), coordsWeatherData: [] };
+        weatherBatchPromAlmost
+          .then(weatherInfoList => {
+            weatherInfoList.forEach(weatherInfo => {
+              if (weatherInfo.failure) {
+                logger.warn(
+                  `-apiGetBatchWeatherData- flowInfo is defected ${flowInfo}`
+                );
+                return;
+              }
+
+              if (!weatherInfo.coord) {
+                logger.warn(
+                  `-apiGetBatchWeatherData- ${weatherInfo} doesn't have any weather info.`
+                );
+                return;
+              }
+
+              responseData.coordsWeatherData.push({
+                coord: weatherInfo.coord,
+                main: weatherInfo.main,
+                wind: weatherInfo.wind
+              });
+            });
+            logger.info(
+              `#${
+                weatherInfoList.length
+              } of requests has been made from -apiBatchFlowInfo-`
+            );
+            res.json(responseData);
+          })
+          .catch(promiseAlmostError => {
+            logger.error(
+              `An error occured during multiple flow requests to OpenWeather from -apiGetBatchWeatherData: ` +
+                `${promiseAlmostError}, stack: ${promiseAlmostError.stack}`
+            );
+            res.status(500).send(INTERNAL_ERROR_MSG);
+            return;
+          });
+      }
+    );
+  }
 }
 
 /**

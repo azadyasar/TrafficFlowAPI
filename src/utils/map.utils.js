@@ -148,14 +148,8 @@ export default class MapUtils {
     };
     let counter = 0;
     routeResult.points.forEach(async point => {
-      logger.debug(`Scanning the coord: ${JSON.stringify(point)}`);
       const distance = this.getDistance(lastCoordinate, point);
-      if (distance < distance_threshold) {
-        logger.debug(
-          `Distance ${distance} is less than the threshold ${distance_threshold}`
-        );
-        return;
-      }
+      if (distance < distance_threshold) return;
       lastCoordinate = point;
       pointFlowPromList.push(callForEachPointFunc(point));
       if (++counter % 50 === 0) await this.sleep(500);
@@ -257,11 +251,7 @@ export default class MapUtils {
       (10 * (flowInfo.freeFlowSpeed - flowInfo.currentSpeed)) /
         flowInfo.freeFlowSpeed
     );
-    logger.debug(
-      `Traffic jam for FFS: ${flowInfo.freeFlowSpeed} - CS: ${
-        flowInfo.currentSpeed
-      }` + ` JF: ${jf}`
-    );
+
     return jf;
   }
 }
