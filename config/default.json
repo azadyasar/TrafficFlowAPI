@@ -2,7 +2,7 @@
   "name": "Traffic Flow API Default Config File",
   "Logger": {
     "logLabel": "AppDev",
-    "logLevel": "debug",
+    "logLevel": "info",
     "errorLogPath": "logs/error.log",
     "warnLogPath": "logs/warn.log",
     "infoLogPath": "logs/info.log",
@@ -12,8 +12,8 @@
 
   "MapUtils": {
     "MaximumRouteDistance": 1000,
-    "MaximumCityDistance": 50,
-    "DistanceThresholdIntraCity": 200,
+    "MaximumCityDistance": 100,
+    "DistanceThresholdIntraCity": 100,
     "DistanceThresholdInterCity": 1000
   },
 

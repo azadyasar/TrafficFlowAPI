@@ -64,7 +64,7 @@ export default class TomTomAPIWrapper {
    * @returns {Promise<TomTomFlowSegmentData>} Returns a promise of the flow segment data
    */
   static async getFlowInfoCoord(coord) {
-    logger.info(
+    logger.debug(
       "Executing GET Request from getFlowInfoCoord " +
         tomtomTrafficBaseURL +
         " - " +
@@ -82,7 +82,7 @@ export default class TomTomAPIWrapper {
           }
         })
         .then(response => {
-          logger.info("GOT Response -getFlowInfoCoord-: " + response);
+          logger.debug("GOT Response -getFlowInfoCoord-: ");
           /**
            * Reject if the response from TomTom is not OK
            */
@@ -106,7 +106,9 @@ export default class TomTomAPIWrapper {
           let tomtomFlowSegmentData = TomTomUtils.storeFlowSegmentData(
             response.data
           );
-          logger.info(`Response data -getFlowInfoCoord-}`);
+          tomtomFlowSegmentData.cumulativeDistance = coord.cumulativeDistance;
+          tomtomFlowSegmentData.coordinate = { lat: coord.lat, long: coord.long };
+          logger.debug(`Response data -getFlowInfoCoord-}`);
           resolve(tomtomFlowSegmentData);
         })
         .catch(error => {

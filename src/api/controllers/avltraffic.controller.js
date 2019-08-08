@@ -661,14 +661,15 @@ export default class AvlTrafficLayerController {
                */
               const jamFactor = MapUtils.getTrafficJam(flowInfo);
               responseData.coordsFlowInfoList.push({
-                coord: flowInfo.coordinates[0],
+                coord: flowInfo.coordinate, //flowInfo.coordinates[0],
                 freeFlowSpeed: flowInfo.freeFlowSpeed,
                 currentSpeed: flowInfo.currentSpeed,
                 currentTravelTime: flowInfo.currentTravelTime,
                 freeFlowTravelTime: flowInfo.freeFlowTravelTime,
                 confidence: flowInfo.confidence,
                 frc: flowInfo.frc,
-                jamFactor: jamFactor
+                jamFactor: jamFactor,
+                cumulativeDistance: flowInfo.cumulativeDistance
               });
             });
             logger.info(
@@ -676,6 +677,7 @@ export default class AvlTrafficLayerController {
                 flowInfoList.length
               } of requests has been made from -apiBatchFlowInfo-`
             );
+            logger.info("Coordinates: ", flowInfoList);
             res.json(responseData);
           })
           .catch(promiseAlmostError => {
@@ -775,14 +777,15 @@ export default class AvlTrafficLayerController {
                */
               const jamFactor = MapUtils.getTrafficJam(flowInfo);
               responseData.coordsFlowInfoList.push({
-                coord: flowInfo.coordinates[0],
+                coord: flowInfo.coordinate, //flowInfo.coordinates[0],
                 freeFlowSpeed: flowInfo.freeFlowSpeed,
                 currentSpeed: flowInfo.currentSpeed,
                 currentTravelTime: flowInfo.currentTravelTime,
                 freeFlowTravelTime: flowInfo.freeFlowTravelTime,
                 confidence: flowInfo.confidence,
                 frc: flowInfo.frc,
-                jamFactor: jamFactor
+                jamFactor: jamFactor,
+                cumulativeDistance: flowInfo.cumulativeDistance
               });
             });
             logger.info(
@@ -937,7 +940,7 @@ export default class AvlTrafficLayerController {
             logger.info(
               `#${
                 weatherInfoList.length
-              } of requests has been made from -apiBatchFlowInfo-`
+              } of requests has been made from -apiBatchWeatherInfo-`
             );
             res.json(responseData);
           })

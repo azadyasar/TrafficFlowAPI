@@ -146,10 +146,24 @@ export default class MapUtils {
       lat: 0,
       long: 0
     };
+    let cumulativeDistance = 0;
+    let lastSeenCoordinate = routeResult.points[0]
+    let lastDistance = Number.MAX_VALUE;
     let counter = 0;
     routeResult.points.forEach(async point => {
       const distance = this.getDistance(lastCoordinate, point);
-      if (distance < distance_threshold) return;
+      cumulativeDistance += this.getDistance(lastSeenCoordinate, point);
+      point.cumulativeDistance = cumulativeDistance;
+      lastSeenCoordinate = point;
+      logger.info(`Point: ${point.lat}-${point.long}=${point.cumulativeDistance}. Distance: ${distance}`);
+      if (distance < (distance_threshold - 25)) {
+        lastDistance = distance;
+        return;
+      }
+      if (Math.abs(lastDistance - distance_threshold) < Math.abs(distance - distance_threshold))
+        point = lastSeenCoordinate;
+      // if ( Math.abs(distance - distance_threshold) > 10) return;
+      logger.debug("Calling worker function for point: ", point);
       lastCoordinate = point;
       pointFlowPromList.push(callForEachPointFunc(point));
       if (++counter % 50 === 0) await this.sleep(500);
