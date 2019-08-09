@@ -161,9 +161,8 @@ export default class MapUtils {
         lastDistance = distance;
         return;
       }
-      let tmpCoordinate
+      let tmpCoordinate = point;
       if (Math.abs(lastDistance - distance_threshold) < Math.abs(distance - distance_threshold)) {
-        tmpCoordinate = point;
         point = lastSeenCoordinate;
         point.cumulativeDistance = tmpCoordinate.cumulativeDistance;
       }
