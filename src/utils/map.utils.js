@@ -161,11 +161,15 @@ export default class MapUtils {
         lastDistance = distance;
         return;
       }
-      if (Math.abs(lastDistance - distance_threshold) < Math.abs(distance - distance_threshold))
+      let tmpCoordinate
+      if (Math.abs(lastDistance - distance_threshold) < Math.abs(distance - distance_threshold)) {
+        tmpCoordinate = point;
         point = lastSeenCoordinate;
+        point.cumulativeDistance = tmpCoordinate.cumulativeDistance;
+      }
       logger.debug("Calling worker function for point: ", point);
       
-      lastCoordinate = lastSeenCoordinate = point;
+      lastCoordinate = tmpCoordinate; lastSeenCoordinate = tmpCoordinate;
       lastDistance = Number.MAX_VALUE;
       pointFlowPromList.push(callForEachPointFunc(point));
       if (++counter % 50 === 0) await this.sleep(500);
