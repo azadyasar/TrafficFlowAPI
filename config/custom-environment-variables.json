@@ -1,8 +1,10 @@
 {
-    "testMail" : {
-        "hostmail" : "appDevHost",
-        "password": "NODE_APP_PW"
-    },
-    "JWT_SECRET_KEY": "JWT_SECRET_KEY",
-    "TOMTOM_API_KEY": "TOMTOM_API_KEY"
+  "testMail": {
+    "hostmail": "appDevHost",
+    "password": "NODE_APP_PW"
+  },
+  "JWT_SECRET_KEY": "JWT_SECRET_KEY",
+  "TOMTOM_API_KEY": "TOMTOM_API_KEY",
+  "HERE_APP_ID": "HERE_APP_ID",
+  "HERE_APP_CODE": "HERE_APP_CODE"
 }

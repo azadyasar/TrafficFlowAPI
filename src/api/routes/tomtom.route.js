@@ -1,5 +1,5 @@
 import { Router } from "express";
-import TomTomAPIController from "../controllers/tomtom";
+import TomTomAPIController from "../controllers/tomtom.controller";
 
 const router = new Router();
 
@@ -8,5 +8,6 @@ router.get("/", (req, res) => {
 });
 router.route("/flow").get(TomTomAPIController.apiGetTrafficFlowData);
 router.route("/tile").get(TomTomAPIController.apiGetMapTileImage);
+router.route("/route").get(TomTomAPIController.apiGetRoute);
 
 export default router;
